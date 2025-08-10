@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Plus, MessageCircle, CreditCard, Home, List, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader } from 'lucide-react';
-import { bucketAPI, financeAPI, chatbotAPI } from './services/api';
+import { ChevronRight, Plus, MessageCircle, CreditCard, Home, List, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader, Search, Filter, X } from 'lucide-react';
+import { bucketAPI, financeAPI, chatbotAPI, welfareAPI } from './services/api';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
@@ -14,9 +14,17 @@ const App = () => {
   const [financeProducts, setFinanceProducts] = useState([]);
   const [taxTips, setTaxTips] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [faqData, setFaqData] = useState([]);
+  const chatInputRef = useRef(null);
+  
+  // 복지 정보 검색 관련 상태
+  const welfareSearchRef = useRef(null);
+  const [welfareResults, setWelfareResults] = useState([]);
+  const [welfareCategories, setWelfareCategories] = useState([]);
+  const [selectedWelfareCategory, setSelectedWelfareCategory] = useState('');
+  const [isWelfareLoading, setIsWelfareLoading] = useState(false);
+  const [showWelfareDetail, setShowWelfareDetail] = useState(null);
   
   // 카운트업 애니메이션
   const [displaySaved, setDisplaySaved] = useState(0);
@@ -83,6 +91,12 @@ const App = () => {
         setFaqData(faqResponse.data);
       }
 
+      // 복지 카테고리 로드
+      const categoriesResponse = await welfareAPI.getCategories();
+      if (categoriesResponse.success) {
+        setWelfareCategories(categoriesResponse.data);
+      }
+
     } catch (error) {
       console.error('데이터 로드 오류:', error);
     }
@@ -130,10 +144,11 @@ const App = () => {
   };
 
   const sendChatMessage = async () => {
-    if (!chatInput.trim() || isLoading) return;
+    const currentInput = chatInputRef.current?.value?.trim();
+    if (!currentInput || isLoading) return;
 
-    const userMessage = chatInput.trim();
-    setChatInput('');
+    const userMessage = currentInput;
+    chatInputRef.current.value = ''; // 입력창 비우기 (리렌더링 없이)
     
     // 사용자 메시지 추가
     const newMessages = [...chatMessages, {
@@ -182,9 +197,98 @@ const App = () => {
   };
 
   const handleFAQClick = async (question) => {
-    setChatInput(question);
+    if (chatInputRef.current) {
+      chatInputRef.current.value = question;
+    }
     await sendChatMessage();
   };
+
+  // 복지 정보 검색 함수
+  const searchWelfare = async (query) => {
+    // 매개변수가 없으면 ref에서 읽기
+    const searchQuery = query || welfareSearchRef.current?.value?.trim() || '';
+    
+    if (!searchQuery) {
+      // 빈 검색어면 전체 데이터 로드
+      await loadAllWelfare();
+      return;
+    }
+
+    setIsWelfareLoading(true);
+    try {
+      const params = {
+        limit: 20
+      };
+      
+      if (selectedWelfareCategory) {
+        params.category = selectedWelfareCategory;
+      }
+
+      const response = await welfareAPI.search(searchQuery, params);
+      if (response.success) {
+        setWelfareResults(response.data.results);
+      }
+    } catch (error) {
+      console.error('복지 정보 검색 오류:', error);
+      setWelfareResults([]);
+    } finally {
+      setIsWelfareLoading(false);
+    }
+  };
+
+  // 전체 복지 정보 로드
+  const loadAllWelfare = async () => {
+    setIsWelfareLoading(true);
+    try {
+      const params = {
+        limit: 20
+      };
+      
+      if (selectedWelfareCategory) {
+        params.category = selectedWelfareCategory;
+      }
+
+      const response = await welfareAPI.getAll(params);
+      if (response.success) {
+        setWelfareResults(response.data.results);
+      }
+    } catch (error) {
+      console.error('복지 정보 로드 오류:', error);
+      setWelfareResults([]);
+    } finally {
+      setIsWelfareLoading(false);
+    }
+  };
+
+  // 복지 정보 상세 조회
+  const getWelfareDetail = async (id) => {
+    try {
+      const response = await welfareAPI.getById(id);
+      if (response.success) {
+        setShowWelfareDetail(response.data);
+      }
+    } catch (error) {
+      console.error('복지 정보 상세 조회 오류:', error);
+    }
+  };
+
+  // 카테고리 변경 시 검색 재실행
+  useEffect(() => {
+    if (currentScreen === 'recommend') {
+      if (welfareSearchRef.current?.value?.trim()) {
+        searchWelfare();
+      } else {
+        loadAllWelfare();
+      }
+    }
+  }, [selectedWelfareCategory]);
+
+  // 추천상품 화면 진입 시 초기 데이터 로드
+  useEffect(() => {
+    if (currentScreen === 'recommend' && welfareResults.length === 0) {
+      loadAllWelfare();
+    }
+  }, [currentScreen]);
 
   const OnboardingScreen = () => (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 p-6">
@@ -477,9 +581,9 @@ const App = () => {
             
             <div className="flex">
               <input
+                ref={chatInputRef}
                 type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                defaultValue=""
                 onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
                 placeholder="궁금한 것을 물어보세요..."
                 className="flex-1 p-3 border border-gray-200 rounded-xl rounded-r-none focus:outline-none focus:border-blue-400"
@@ -487,7 +591,7 @@ const App = () => {
               />
               <button 
                 onClick={sendChatMessage}
-                disabled={isLoading || !chatInput.trim()}
+                disabled={isLoading}
                 className="bg-blue-500 text-white px-4 rounded-xl rounded-l-none hover:bg-blue-600 transition-colors disabled:bg-gray-300"
               >
                 <Send className="w-5 h-5" />
@@ -510,6 +614,109 @@ const App = () => {
             ))}
           </div>
         </div>
+
+        {/* 복지 정보 상세 모달 */}
+        {showWelfareDetail && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                <h3 className="font-bold text-gray-800 text-lg">복지 정보 상세</h3>
+                <button 
+                  onClick={() => setShowWelfareDetail(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="mb-4">
+                  <h4 className="font-bold text-gray-800 text-xl mb-2">
+                    {showWelfareDetail.name || showWelfareDetail.title}
+                  </h4>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm">
+                      {showWelfareDetail.category}
+                    </span>
+                    <span className="text-gray-600 text-sm">
+                      {showWelfareDetail.agency}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {showWelfareDetail.content && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📋 내용</h5>
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                        {showWelfareDetail.content}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.targetGroup && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">👥 지원대상</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.targetGroup}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.applicationPeriod && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📅 신청기간</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.applicationPeriod}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.applicationMethod && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📝 신청방법</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.applicationMethod}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.contact && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📞 문의처</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.contact}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.url && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">🔗 관련 링크</h5>
+                      <a 
+                        href={showWelfareDetail.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 text-sm hover:underline"
+                      >
+                        자세한 내용 보기 →
+                      </a>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <button 
+                    onClick={() => setShowWelfareDetail(null)}
+                    className="w-full bg-gray-800 text-white py-3 rounded-xl hover:bg-gray-700 transition-colors"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -517,8 +724,119 @@ const App = () => {
   const RecommendScreen = () => (
     <div className="min-h-screen bg-gray-50">
       <div className="px-6 pt-16 pb-24">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">맞춤 금융상품</h1>
-        <p className="text-gray-600 text-sm mb-8">회원님을 위한 절세 상품을 추천드려요</p>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">맞춤 추천 및 복지정보</h1>
+        <p className="text-gray-600 text-sm mb-8">절세 상품과 복지 정보를 찾아보세요</p>
+
+        {/* 복지 정보 검색 섹션 */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
+            <button 
+              onClick={() => setSelectedWelfareCategory('')}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              전체보기
+            </button>
+          </div>
+
+          {/* 검색창 */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
+            <div className="flex space-x-2 mb-3">
+              <div className="flex-1 relative">
+                <input
+                  ref={welfareSearchRef}
+                  type="text"
+                  defaultValue=""
+                  onKeyPress={(e) => e.key === 'Enter' && searchWelfare()}
+                  placeholder="예: 청년 월세, 출산 지원, 노인 의료비..."
+                  className="w-full p-3 pr-10 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400"
+                />
+                <Search className="absolute right-3 top-3 w-5 h-5 text-gray-400" />
+              </div>
+              <button
+                onClick={() => searchWelfare()}
+                disabled={isWelfareLoading}
+                className="bg-blue-500 text-white px-4 py-3 rounded-xl hover:bg-blue-600 transition-colors disabled:bg-gray-300"
+              >
+                {isWelfareLoading ? <Loader className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {/* 카테고리 필터 */}
+            <div className="flex space-x-2 overflow-x-auto pb-1">
+              <button
+                onClick={() => setSelectedWelfareCategory('')}
+                className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
+                  !selectedWelfareCategory 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                전체
+              </button>
+              {welfareCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedWelfareCategory(category)}
+                  className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
+                    selectedWelfareCategory === category
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 검색 결과 */}
+          <div className="space-y-3 mb-6">
+            {isWelfareLoading ? (
+              <div className="text-center py-8">
+                <Loader className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-500" />
+                <p className="text-gray-600">복지 정보를 불러오는 중...</p>
+              </div>
+            ) : welfareResults.length > 0 ? (
+              welfareResults.map((welfare, index) => (
+                <div key={welfare.id || index} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-800 text-lg mb-1">{welfare.name || welfare.title}</h4>
+                      <p className="text-gray-600 text-sm mb-2">{welfare.agency || welfare.category}</p>
+                    </div>
+                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">
+                      {welfare.category}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-700 text-sm mb-3 line-clamp-2">
+                    {welfare.content || welfare.description || '상세 내용을 확인하세요.'}
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-500">
+                      {welfare.targetGroup && `대상: ${welfare.targetGroup}`}
+                      {welfare.applicationPeriod && ` | 신청기간: ${welfare.applicationPeriod}`}
+                    </div>
+                    <button 
+                      onClick={() => getWelfareDetail(welfare.id)}
+                      className="bg-gray-800 text-white px-3 py-1 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+                    >
+                      자세히 보기
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Search className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500">검색 결과가 없습니다.</p>
+                <p className="text-gray-400 text-sm">다른 키워드로 검색해보세요.</p>
+              </div>
+            )}
+          </div>
+        </div>
         
         <div className="mb-8">
           <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
