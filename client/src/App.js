@@ -89,8 +89,10 @@ const App = () => {
   };
 
   const handleOnboardingComplete = async () => {
-    const bucketValue = bucketInputRef.current?.value || bucketList;
-    const amountValue = amountInputRef.current?.value || targetAmount;
+    const bucketValue = bucketInputRef.current?.value?.trim();
+    const amountValue = amountInputRef.current?.value?.trim();
+    
+    console.log('입력값 확인:', { bucketValue, amountValue });
     
     if (bucketValue && amountValue) {
       try {
@@ -122,6 +124,8 @@ const App = () => {
         setMonthlyAmount(85000);
         setCurrentScreen('dashboard');
       }
+    } else {
+      alert('버킷리스트와 목표 금액을 모두 입력해주세요!');
     }
   };
 
@@ -200,8 +204,7 @@ const App = () => {
             </label>
             <textarea
               ref={bucketInputRef}
-              defaultValue={bucketList}
-              onInput={(e) => setBucketList(e.target.value)}
+              defaultValue=""
               placeholder="예: 제주도 여행, 맥북 구매, 어학연수..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 resize-none"
               maxLength="50"
@@ -218,10 +221,10 @@ const App = () => {
                 ref={amountInputRef}
                 type="text"
                 inputMode="numeric"
-                defaultValue={targetAmount}
+                defaultValue=""
                 onInput={(e) => {
+                  // 숫자만 유지하되 setState는 호출하지 않음
                   e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                  setTargetAmount(e.target.value);
                 }}
                 placeholder="1000000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
