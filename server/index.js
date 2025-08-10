@@ -33,7 +33,13 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV,
+    features: {
+      chatbot: process.env.GEMINI_API_KEY ? 'enabled' : 'fallback',
+      database: 'memory',
+      cors: 'enabled'
+    },
+    endpoints: ['/api/welfare', '/api/chatbot', '/api/bucket', '/api/finance']
   });
 });
 
@@ -74,4 +80,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`📍 환경: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔑 Gemini API Key: ${process.env.GEMINI_API_KEY ? '✅ 설정됨' : '❌ 없음'}`);
+  console.log(`🤖 챗봇 기능: ${process.env.GEMINI_API_KEY ? '활성화' : '비활성화 (fallback 모드)'}`);
 });

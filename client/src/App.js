@@ -136,23 +136,35 @@ const App = () => {
     setIsLoading(true);
 
     try {
+      console.log('챗봇 API 호출 중...');
       const response = await chatbotAPI.sendMessage(userMessage, newMessages.slice(-5));
+      console.log('챗봇 응답:', response);
       
-      if (response.success) {
+      if (response.success && response.data) {
         setChatMessages(prev => [...prev, {
           role: 'assistant',
           content: response.data.message,
-          relevantInfo: response.data.relevantInfo,
-          timestamp: response.data.timestamp
+          relevantInfo: response.data.relevantInfo || [],
+          timestamp: response.data.timestamp || new Date().toISOString()
         }]);
       } else {
-        throw new Error('응답 실패');
+        throw new Error(response.error || '응답 형식 오류');
       }
     } catch (error) {
-      console.error('채팅 오류:', error);
+      console.error('채팅 오류 상세:', error);
+      
+      // 네트워크 오류와 서버 오류 구분
+      let errorMessage = '죄송합니다. 일시적인 오류가 발생했습니다.';
+      
+      if (error.message?.includes('서버에 연결할 수 없습니다')) {
+        errorMessage = '서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = '응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.';
+      }
+      
       setChatMessages(prev => [...prev, {
         role: 'assistant',
-        content: '죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        content: `${errorMessage}\n\n💡 대신 이런 질문들을 시도해보세요:\n• 월세 세액공제 받는 방법\n• 청년도약계좌 조건\n• 연말정산 준비 방법`,
         timestamp: new Date().toISOString()
       }]);
     } finally {

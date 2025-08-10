@@ -3,14 +3,23 @@ const dataProcessor = require('./dataProcessor');
 
 class GeminiService {
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    console.log('Gemini API Key 확인:', apiKey ? '설정됨' : '없음');
+    
+    if (!apiKey) {
       console.error('GEMINI_API_KEY가 설정되지 않았습니다.');
       this.genAI = null;
       return;
     }
     
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+    try {
+      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+      console.log('Gemini AI 초기화 성공');
+    } catch (error) {
+      console.error('Gemini AI 초기화 실패:', error);
+      this.genAI = null;
+    }
     
     this.systemPrompt = `
 당신은 한국의 절세 및 복지 제도 전문 상담사입니다. 
@@ -36,13 +45,17 @@ class GeminiService {
   }
 
   async chat(userMessage, context = []) {
+    console.log('채팅 요청 받음:', userMessage);
+    
     try {
-      if (!this.genAI) {
+      if (!this.genAI || !this.model) {
+        console.log('Gemini AI 없음, fallback 사용');
         return this.getFallbackResponse(userMessage);
       }
 
       // 관련 복지 정보 검색
       const relevantWelfare = this.searchRelevantInfo(userMessage);
+      console.log('관련 복지 정보 찾음:', relevantWelfare.length + '개');
       
       // 컨텍스트 구성
       let contextPrompt = this.systemPrompt;
@@ -66,17 +79,25 @@ class GeminiService {
 
       contextPrompt += `\n사용자 질문: ${userMessage}`;
 
+      console.log('Gemini API 호출 시작...');
       const result = await this.model.generateContent(contextPrompt);
       const response = await result.response;
+      const text = response.text();
+      
+      console.log('Gemini API 응답 성공');
       
       return {
         success: true,
-        message: response.text(),
-        relevantInfo: relevantWelfare.slice(0, 3) // 최대 3개의 관련 정보
+        message: text,
+        relevantInfo: relevantWelfare.slice(0, 3)
       };
 
     } catch (error) {
-      console.error('Gemini API 오류:', error);
+      console.error('Gemini API 오류 상세:', {
+        message: error.message,
+        status: error.status,
+        details: error.details
+      });
       return this.getFallbackResponse(userMessage);
     }
   }

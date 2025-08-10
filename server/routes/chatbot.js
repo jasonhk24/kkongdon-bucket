@@ -6,6 +6,8 @@ const geminiService = require('../services/geminiService');
 router.post('/chat', async (req, res) => {
   try {
     const { message, context = [] } = req.body;
+    
+    console.log('📨 채팅 요청:', { message: message?.substring(0, 50), contextLength: context.length });
 
     if (!message) {
       return res.status(400).json({
@@ -16,20 +18,24 @@ router.post('/chat', async (req, res) => {
 
     const response = await geminiService.chat(message, context);
     
+    console.log('✅ 채팅 응답 성공:', { success: response.success, messageLength: response.message?.length });
+    
     res.json({
       success: true,
       data: {
         message: response.message,
         relevantInfo: response.relevantInfo || [],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        source: response.success ? 'gemini' : 'fallback'
       }
     });
 
   } catch (error) {
-    console.error('채팅 처리 오류:', error);
+    console.error('❌ 채팅 처리 오류:', error);
     res.status(500).json({
       success: false,
-      error: '채팅 처리 중 오류가 발생했습니다.'
+      error: '채팅 처리 중 오류가 발생했습니다.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
