@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Plus, MessageCircle, CreditCard, Home, List, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader } from 'lucide-react';
 import { bucketAPI, financeAPI, chatbotAPI } from './services/api';
 
@@ -6,6 +6,8 @@ const App = () => {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [bucketList, setBucketList] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
+  const bucketInputRef = useRef(null);
+  const amountInputRef = useRef(null);
   const [bucketLists, setBucketLists] = useState([]);
   const [savedAmount, setSavedAmount] = useState(0);
   const [monthlyAmount, setMonthlyAmount] = useState(0);
@@ -87,11 +89,14 @@ const App = () => {
   };
 
   const handleOnboardingComplete = async () => {
-    if (bucketList && targetAmount) {
+    const bucketValue = bucketInputRef.current?.value || bucketList;
+    const amountValue = amountInputRef.current?.value || targetAmount;
+    
+    if (bucketValue && amountValue) {
       try {
         const newBucket = {
-          name: bucketList,
-          target: parseInt(targetAmount) || 0,
+          name: bucketValue,
+          target: parseInt(amountValue) || 0,
           deadline: '2024-12-31'
         };
 
@@ -107,8 +112,8 @@ const App = () => {
         // 오류가 발생해도 화면 전환 (데모용)
         setBucketLists([{
           id: 1,
-          name: bucketList,
-          target: parseInt(targetAmount) || 0,
+          name: bucketValue,
+          target: parseInt(amountValue) || 0,
           saved: 0,
           deadline: '2024-12-31',
           progress: 0
@@ -194,8 +199,9 @@ const App = () => {
               어떤 버킷리스트를 이루고 싶나요? 💫
             </label>
             <textarea
-              value={bucketList}
-              onChange={(e) => setBucketList(e.target.value)}
+              ref={bucketInputRef}
+              defaultValue={bucketList}
+              onInput={(e) => setBucketList(e.target.value)}
               placeholder="예: 제주도 여행, 맥북 구매, 어학연수..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 resize-none"
               maxLength="50"
@@ -209,9 +215,14 @@ const App = () => {
             </label>
             <div className="relative">
               <input
-                type="number"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
+                ref={amountInputRef}
+                type="text"
+                inputMode="numeric"
+                defaultValue={targetAmount}
+                onInput={(e) => {
+                  e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                  setTargetAmount(e.target.value);
+                }}
                 placeholder="1000000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
               />
@@ -221,8 +232,7 @@ const App = () => {
 
           <button
             onClick={handleOnboardingComplete}
-            disabled={!bucketList || !targetAmount}
-            className="w-full bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium py-4 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+            className="w-full bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium py-4 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all transform hover:scale-105 active:scale-95"
           >
             시작하기 🚀
           </button>
