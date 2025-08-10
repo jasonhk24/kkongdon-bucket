@@ -6,7 +6,6 @@ const App = () => {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [bucketList, setBucketList] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
-  const [isComposing, setIsComposing] = useState(false);
   const [bucketLists, setBucketLists] = useState([]);
   const [savedAmount, setSavedAmount] = useState(0);
   const [monthlyAmount, setMonthlyAmount] = useState(0);
@@ -15,7 +14,6 @@ const App = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isChatComposing, setIsChatComposing] = useState(false);
   const [faqData, setFaqData] = useState([]);
   
   // 카운트업 애니메이션
@@ -93,7 +91,7 @@ const App = () => {
       try {
         const newBucket = {
           name: bucketList,
-          target: parseInt(targetAmount),
+          target: parseInt(targetAmount) || 0,
           deadline: '2024-12-31'
         };
 
@@ -110,7 +108,7 @@ const App = () => {
         setBucketLists([{
           id: 1,
           name: bucketList,
-          target: parseInt(targetAmount),
+          target: parseInt(targetAmount) || 0,
           saved: 0,
           deadline: '2024-12-31',
           progress: 0
@@ -185,17 +183,7 @@ const App = () => {
             </label>
             <textarea
               value={bucketList}
-              onChange={(e) => {
-                if (!isComposing) {
-                  setBucketList(e.target.value);
-                }
-              }}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionUpdate={(e) => setBucketList(e.target.value)}
-              onCompositionEnd={(e) => {
-                setIsComposing(false);
-                setBucketList(e.target.value);
-              }}
+              onChange={(e) => setBucketList(e.target.value)}
               placeholder="예: 제주도 여행, 맥북 구매, 어학연수..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 resize-none"
               maxLength="50"
@@ -209,16 +197,9 @@ const App = () => {
             </label>
             <div className="relative">
               <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                type="number"
                 value={targetAmount}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 12) {
-                    setTargetAmount(value);
-                  }
-                }}
+                onChange={(e) => setTargetAmount(e.target.value)}
                 placeholder="1000000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
               />
@@ -473,18 +454,8 @@ const App = () => {
               <input
                 type="text"
                 value={chatInput}
-                onChange={(e) => {
-                  if (!isChatComposing) {
-                    setChatInput(e.target.value);
-                  }
-                }}
-                onCompositionStart={() => setIsChatComposing(true)}
-                onCompositionUpdate={(e) => setChatInput(e.target.value)}
-                onCompositionEnd={(e) => {
-                  setIsChatComposing(false);
-                  setChatInput(e.target.value);
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && !isChatComposing && sendChatMessage()}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
                 placeholder="궁금한 것을 물어보세요..."
                 className="flex-1 p-3 border border-gray-200 rounded-xl rounded-r-none focus:outline-none focus:border-blue-400"
                 disabled={isLoading}
