@@ -1,0 +1,21 @@
+{
+  "name": "kkongdon-bucket-server",
+  "version": "1.0.0",
+  "description": "꽁돈버킷 백엔드 서버",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "@google/generative-ai": "^0.2.1",
+    "body-parser": "^1.20.2",
+    "multer": "^1.4.5-lts.1",
+    "fs-extra": "^11.1.1",
+    "csv-parser": "^3.0.0",
+    "nodemon": "^3.0.1"
+  }
+}

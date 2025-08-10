@@ -1,0 +1,28 @@
+{
+  "short_name": "꽁돈버킷",
+  "name": "꽁돈버킷 - 절세로 꿈을 이루다",
+  "description": "절세로 모은 꽁돈으로 버킷리스트를 이뤄보세요",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png", 
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#f59e0b",
+  "background_color": "#fef3c7",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "lifestyle", "productivity"]
+}

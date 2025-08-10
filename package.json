@@ -1,0 +1,20 @@
+{
+  "name": "kkongdon-bucket-app",
+  "version": "1.0.0",
+  "description": "절세로 모은 꽁돈으로 버킷리스트를 이뤄보는 앱",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "deploy": "node scripts/deploy.js",
+    "deploy:railway": "cd server && railway up",
+    "deploy:vercel": "cd client && vercel --prod",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm install --production"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
