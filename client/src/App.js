@@ -104,15 +104,17 @@ const App = () => {
 
   const handleOnboardingComplete = async () => {
     const bucketValue = bucketInputRef.current?.value?.trim();
-    const amountValue = amountInputRef.current?.value?.trim();
+    const amountValueRaw = amountInputRef.current?.value?.trim();
+    // 콤마 제거하고 숫자로 변환
+    const amountValue = amountValueRaw ? parseInt(amountValueRaw.replace(/[^0-9]/g, '')) : 0;
     
     console.log('입력값 확인:', { bucketValue, amountValue });
     
-    if (bucketValue && amountValue) {
+    if (bucketValue && amountValue > 0) {
       try {
         const newBucket = {
           name: bucketValue,
-          target: parseInt(amountValue) || 0,
+          target: amountValue,
           deadline: '2024-12-31'
         };
 
@@ -129,7 +131,7 @@ const App = () => {
         setBucketLists([{
           id: 1,
           name: bucketValue,
-          target: parseInt(amountValue) || 0,
+          target: amountValue,
           saved: 0,
           deadline: '2024-12-31',
           progress: 0
@@ -327,10 +329,13 @@ const App = () => {
                 inputMode="numeric"
                 defaultValue=""
                 onInput={(e) => {
-                  // 숫자만 유지하되 setState는 호출하지 않음
-                  e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                  // 숫자만 추출
+                  const value = e.target.value.replace(/[^0-9]/g, '');
+                  // 천단위 콤마 추가
+                  const formattedValue = value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                  e.target.value = formattedValue;
                 }}
-                placeholder="1000000"
+                placeholder="1,000,000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
               />
               <span className="absolute right-4 top-4 text-gray-500">원</span>

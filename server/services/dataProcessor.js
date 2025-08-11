@@ -57,55 +57,80 @@ class DataProcessor {
       {
         id: 'w1',
         name: '청년도약계좌',
+        title: '청년도약계좌',
         summary: '청년층의 자산형성을 지원하는 정부 정책상품',
-        content: '월 최대 40만원까지 5년간 납입하면 정부가 매년 최대 240만원을 지원하는 청년 자산형성 상품입니다.',
-        target: '만 19~34세 청년 중 기준중위소득 180% 이하',
+        content: '월 최대 40만원까지 5년간 납입하면 정부가 매년 최대 240만원을 지원하는 청년 자산형성 상품입니다.\n\n정부가 청년층의 자산형성을 위해 도입한 정책상품으로, 납입액에 따라 정부기여금을 지급받을 수 있습니다.',
+        targetGroup: '만 19~34세 청년 중 기준중위소득 180% 이하',
         benefits: ['연 6% 정부기여금', '비과세 혜택', '최대 1,200만원 지원'],
-        applicationMethod: '은행 방문 또는 인터넷뱅킹',
+        applicationMethod: '은행 방문 또는 인터넷뱅킹을 통해 신청 가능합니다.',
+        applicationPeriod: '연중 상시 접수',
+        contact: '고용노동부 청년정책과 02-2110-2850',
+        agency: '고용노동부',
+        url: 'https://www.work.go.kr/youthjump',
         relatedKeywords: ['청년', '적금', '자산형성', '정부지원', '비과세'],
         category: '자산형성'
       },
       {
         id: 'w2',
         name: '월세 세액공제',
+        title: '월세 세액공제',
         summary: '월세를 내는 무주택 세대주의 세금 부담을 줄여주는 제도',
-        content: '연간 월세액의 12%를 소득세에서 공제해주며, 2025년부터 최대 75만원까지 확대됩니다.',
-        target: '총급여 7천만원 이하 무주택 세대주',
+        content: '연간 월세액의 12%를 소득세에서 공제해주며, 2025년부터 최대 75만원까지 확대됩니다.\n\n무주택 세대주가 월세를 지불하는 경우 세금 부담을 덜어주는 제도로, 연말정산이나 종합소득세 신고 시 신청할 수 있습니다.',
+        targetGroup: '총급여 7천만원 이하 무주택 세대주',
         benefits: ['연간 최대 75만원 세액공제', '월세 부담 경감'],
-        applicationMethod: '연말정산 또는 종합소득세 신고 시 신청',
+        applicationMethod: '연말정산 또는 종합소득세 신고 시 신청 (필요서류: 임대차계약서, 월세납입증명서)',
+        applicationPeriod: '연말정산: 다음해 1월, 종합소득세: 매년 5월',
+        contact: '국세청 상담센터 126',
+        agency: '국세청',
+        url: 'https://www.hometax.go.kr',
         relatedKeywords: ['월세', '세액공제', '무주택', '연말정산'],
         category: '주거'
       },
       {
         id: 'w3',
         name: '근로·자녀장려금',
+        title: '근로·자녀장려금',
         summary: '일하는 저소득 가정과 자녀양육 가정을 지원하는 정부 지원금',
-        content: '소득과 재산이 일정 기준 이하인 근로자 가정에 최대 330만원의 장려금을 지급합니다.',
-        target: '부부합산 연소득 2,100만원 이하 (단독세대 1,400만원)',
+        content: '소득과 재산이 일정 기준 이하인 근로자 가정에 최대 330만원의 장려금을 지급합니다.\n\n일하는 저소득 가정의 근로 의욕을 높이고 실질소득을 지원하기 위한 제도로, 가구원수와 소득 수준에 따라 차등 지급됩니다.',
+        targetGroup: '부부합산 연소득 2,100만원 이하 (단독세대 1,400만원)',
         benefits: ['근로장려금 최대 330만원', '자녀장려금 최대 100만원'],
-        applicationMethod: '5월 종합소득세 신고 시 함께 신청',
+        applicationMethod: '5월 종합소득세 신고 시 함께 신청 (홈택스 또는 세무서)',
+        applicationPeriod: '매년 5월 1일~31일',
+        contact: '국세청 상담센터 126',
+        agency: '국세청',
+        url: 'https://www.hometax.go.kr',
         relatedKeywords: ['장려금', '저소득', '자녀', '근로'],
         category: '생활지원'
       },
       {
         id: 'w4',
         name: '청년내일채움공제',
+        title: '청년내일채움공제',
         summary: '중소기업 취업 청년의 장기근속을 지원하는 적립식 지원제도',
-        content: '중소기업에 정규직으로 취업한 청년이 2~3년간 근속 시 기업, 정부와 함께 적립하여 목돈을 마련할 수 있습니다.',
-        target: '만 15~34세 중소기업 정규직 취업 청년',
+        content: '중소기업에 정규직으로 취업한 청년이 2~3년간 근속 시 기업, 정부와 함께 적립하여 목돈을 마련할 수 있습니다.\n\n청년 고용 촉진과 중소기업의 인력 확보를 위해 도입된 제도로, 청년과 기업이 함께 납입하고 정부가 지원금을 추가하는 방식입니다.',
+        targetGroup: '만 15~34세 중소기업 정규직 취업 청년',
         benefits: ['2년형 1,600만원', '3년형 3,000만원 수령'],
-        applicationMethod: '워크넷 또는 고용센터 신청',
+        applicationMethod: '워크넷 또는 고용센터에서 신청 (기업을 통한 단체 신청)',
+        applicationPeriod: '연중 상시 접수 (기업별 상이)',
+        contact: '고용노동부 고용정책실 02-2110-2724',
+        agency: '고용노동부',
+        url: 'https://www.work.go.kr',
         relatedKeywords: ['청년', '중소기업', '장기근속', '적립'],
         category: '취업지원'
       },
       {
         id: 'w5',
         name: '개인연금저축 세액공제',
+        title: '개인연금저축 세액공제',
         summary: '개인연금 납입액에 대한 세액공제 혜택',
-        content: '연간 납입액의 12~16.5%를 세액공제 받을 수 있으며, 최대 72만원까지 공제 가능합니다.',
-        target: '개인연금저축 가입자',
+        content: '연간 납입액의 12~16.5%를 세액공제 받을 수 있으며, 최대 72만원까지 공제 가능합니다.\n\n노후 자금 마련을 장려하기 위한 제도로, 개인연금저축에 납입한 금액에 대해 소득 수준에 따라 차등적으로 세액공제를 제공합니다.',
+        targetGroup: '개인연금저축 가입자 (연간 400만원 이하 납입자)',
         benefits: ['연간 최대 72만원 세액공제', '노후 자금 준비'],
-        applicationMethod: '연말정산 시 자동 적용',
+        applicationMethod: '연말정산 시 자동 적용 (별도 신청 불필요)',
+        applicationPeriod: '연중 납입, 다음해 1월 연말정산 시 공제',
+        contact: '국세청 상담센터 126',
+        agency: '국세청',
+        url: 'https://www.hometax.go.kr',
         relatedKeywords: ['연금', '세액공제', '노후준비'],
         category: '노후준비'
       }
@@ -120,7 +145,7 @@ class DataProcessor {
         bank: 'KB국민은행',
         category: '적금',
         expectedSavings: 2400000,
-        description: '월 최대 40만원 납입, 정부 기여금 연 6%',
+        description: '• 월 최대 40만원 납입\n• 정부 기여금 연 6% 지급\n• 5년 만기 시 최대 3,600만원',
         features: ['정부 기여금', '비과세', '5년 만기'],
         applicationLink: 'https://www.kbstar.com',
         isRecommended: true,
@@ -133,7 +158,7 @@ class DataProcessor {
         bank: 'KB국민카드',
         category: '신용카드',
         expectedSavings: 480000,
-        description: '대중교통 40% 캐시백, 의료비·교육비 15% 공제',
+        description: '• 대중교통 40% 캐시백\n• 의료비/교육비 15% 공제\n• 연간 한도 300만원',
         features: ['대중교통 할인', '의료비 공제', '교육비 공제'],
         applicationLink: 'https://card.kbcard.com',
         isRecommended: true,
@@ -142,6 +167,45 @@ class DataProcessor {
       },
       {
         id: 'f3',
+        name: '신한 쏠편한 청년통장',
+        bank: '신한은행',
+        category: '적금',
+        expectedSavings: 1800000,
+        description: '• 월 최대 30만원 납입\n• 정부 기여금 연 4%\n• 3년 만기 우대금리',
+        features: ['정부 기여금', '우대금리', '청년 전용'],
+        applicationLink: 'https://www.shinhan.com',
+        isRecommended: true,
+        targetAge: '19-29세',
+        condition: '기준중위소득 150% 이하'
+      },
+      {
+        id: 'f4',
+        name: '하나 원큐페이 카드',
+        bank: '하나카드',
+        category: '신용카드',
+        expectedSavings: 720000,
+        description: '• 온라인 쇼핑 5% 적립\n• 배달음식 10% 할인\n• 구독서비스 무료 혜택',
+        features: ['온라인 적립', '배달 할인', '구독 혜택'],
+        applicationLink: 'https://www.hanacard.co.kr',
+        isRecommended: true,
+        targetAge: '전연령',
+        condition: '신용등급 7등급 이상'
+      },
+      {
+        id: 'f5',
+        name: '우리 WON적금플러스',
+        bank: '우리은행',
+        category: '적금',
+        expectedSavings: 960000,
+        description: '• 월 최대 20만원 납입\n• 우대금리 연 4.5%\n• 2년 만기 자동연장',
+        features: ['우대금리', '자동연장', '중도해지 가능'],
+        applicationLink: 'https://www.wooribank.com',
+        isRecommended: true,
+        targetAge: '전연령',
+        condition: '우리은행 주거래 고객'
+      },
+      {
+        id: 'f6',
         name: '주택청약종합저축',
         bank: '우리은행',
         category: '적금',
@@ -152,6 +216,19 @@ class DataProcessor {
         isRecommended: false,
         targetAge: '19세 이상',
         condition: '무주택자'
+      },
+      {
+        id: 'f7',
+        name: '개인연금저축',
+        bank: '삼성생명',
+        category: '연금',
+        expectedSavings: 720000,
+        description: '노후 준비와 세액공제 혜택',
+        features: ['연간 최대 72만원 세액공제', '노후 자금', '복리 효과'],
+        applicationLink: 'https://www.samsunglife.com',
+        isRecommended: false,
+        targetAge: '전연령',
+        condition: '연 400만원 이하 납입'
       }
     ];
   }
@@ -201,6 +278,10 @@ class DataProcessor {
         keyword.toLowerCase().includes(lowercaseQuery)
       )
     );
+  }
+
+  getWelfareById(id) {
+    return this.welfareData.find(item => item.id === id);
   }
 
   getFinanceProducts(category = null) {
