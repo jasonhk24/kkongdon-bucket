@@ -614,109 +614,6 @@ const App = () => {
             ))}
           </div>
         </div>
-
-        {/* 복지 정보 상세 모달 */}
-        {showWelfareDetail && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800 text-lg">복지 정보 상세</h3>
-                <button 
-                  onClick={() => setShowWelfareDetail(null)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-              
-              <div className="p-4">
-                <div className="mb-4">
-                  <h4 className="font-bold text-gray-800 text-xl mb-2">
-                    {showWelfareDetail.name || showWelfareDetail.title}
-                  </h4>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm">
-                      {showWelfareDetail.category}
-                    </span>
-                    <span className="text-gray-600 text-sm">
-                      {showWelfareDetail.agency}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {showWelfareDetail.content && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">📋 내용</h5>
-                      <p className="text-gray-700 text-sm whitespace-pre-wrap">
-                        {showWelfareDetail.content}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {showWelfareDetail.targetGroup && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">👥 지원대상</h5>
-                      <p className="text-gray-700 text-sm">
-                        {showWelfareDetail.targetGroup}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {showWelfareDetail.applicationPeriod && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">📅 신청기간</h5>
-                      <p className="text-gray-700 text-sm">
-                        {showWelfareDetail.applicationPeriod}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {showWelfareDetail.applicationMethod && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">📝 신청방법</h5>
-                      <p className="text-gray-700 text-sm">
-                        {showWelfareDetail.applicationMethod}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {showWelfareDetail.contact && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">📞 문의처</h5>
-                      <p className="text-gray-700 text-sm">
-                        {showWelfareDetail.contact}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {showWelfareDetail.url && (
-                    <div>
-                      <h5 className="font-medium text-gray-800 mb-2">🔗 관련 링크</h5>
-                      <a 
-                        href={showWelfareDetail.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 text-sm hover:underline"
-                      >
-                        자세한 내용 보기 →
-                      </a>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <button 
-                    onClick={() => setShowWelfareDetail(null)}
-                    className="w-full bg-gray-800 text-white py-3 rounded-xl hover:bg-gray-700 transition-colors"
-                  >
-                    닫기
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -727,7 +624,94 @@ const App = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-2">맞춤 추천 및 복지정보</h1>
         <p className="text-gray-600 text-sm mb-8">절세 상품과 복지 정보를 찾아보세요</p>
 
-        {/* 복지 정보 검색 섹션 */}
+        {/* 👤 회원님 맞춤 추천 (더미 데이터) */}
+        <div className="mb-8">
+          <h3 className="font-bold text-gray-800 mb-4">👤 회원님 맞춤 추천</h3>
+          <div className="space-y-4">
+            {[
+              {
+                id: 'youth-savings',
+                title: "청년내일저축계좌",
+                subtitle: "기초생활수급자 대상",
+                benefit: "매월 10만원 적립 시 정부 30만원 매칭",
+                condition: "만 15~39세 기초생활수급자",
+                color: "from-green-400 to-emerald-500"
+              },
+              {
+                id: 'housing-savings',
+                title: "주택청약종합저축",
+                subtitle: "내 집 마련 준비",
+                benefit: "연간 최대 240만원 소득공제",
+                condition: "만 19세 이상 무주택자",
+                color: "from-purple-400 to-pink-500"
+              },
+              {
+                id: 'pension-savings',
+                title: "개인연금저축",
+                subtitle: "노후 준비",
+                benefit: "연간 최대 72만원 세액공제",
+                condition: "연 400만원 이하 납입",
+                color: "from-orange-400 to-red-500"
+              }
+            ].map((product) => (
+              <div key={product.id} className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-gray-800 text-lg">{product.title}</h4>
+                    <p className="text-gray-600 text-sm">{product.subtitle}</p>
+                  </div>
+                  <div className={`bg-gradient-to-r ${product.color} w-12 h-12 rounded-xl flex items-center justify-center`}>
+                    <CreditCard className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                  <div className="text-sm text-gray-600 mb-1">혜택</div>
+                  <div className="font-medium text-gray-800">{product.benefit}</div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-gray-500">{product.condition}</div>
+                  <button className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors">
+                    자세히 보기
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 🔥 인기 상품 */}
+        <div className="mb-8">
+          <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
+          <div className="flex space-x-4 overflow-x-auto pb-4">
+            {financeProducts.filter(product => product.isRecommended).map((product) => (
+              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 min-w-80 text-white shadow-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="text-sm opacity-90 mb-1">{product.bank}</div>
+                    <h3 className="text-xl font-bold">{product.name}</h3>
+                  </div>
+                  <div className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
+                    {product.isRecommended ? '추천' : 'NEW'}
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="text-sm opacity-90 mb-1">예상 절세액</div>
+                  <div className="text-2xl font-bold">연 {product.expectedSavings?.toLocaleString() || '0'}원</div>
+                </div>
+                <div className="text-sm opacity-90 mb-6">
+                  {product.description}
+                </div>
+                <button className="w-full bg-white text-yellow-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all">
+                  바로 신청하기
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 🔍 복지 정보 검색 섹션 (실제 데이터) */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
@@ -867,35 +851,108 @@ const App = () => {
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="font-bold text-gray-800">👤 회원님 맞춤 추천</h3>
-          
-          {financeProducts.filter(product => !product.isRecommended).map((product) => (
-            <div key={product.id} className="bg-white rounded-2xl p-6 shadow-sm">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h4 className="font-bold text-gray-800 text-lg">{product.name}</h4>
-                  <p className="text-gray-600 text-sm">{product.bank}</p>
-                </div>
-                <div className="bg-gradient-to-r from-purple-400 to-pink-500 w-12 h-12 rounded-xl flex items-center justify-center">
-                  <CreditCard className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                <div className="text-sm text-gray-600 mb-1">혜택</div>
-                <div className="font-medium text-gray-800">{product.description}</div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-500">{product.condition}</div>
-                <button className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors">
-                  자세히 보기
+        {/* 복지 정보 상세 모달 */}
+        {showWelfareDetail && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+                <h3 className="font-bold text-gray-800 text-lg">복지 정보 상세</h3>
+                <button 
+                  onClick={() => setShowWelfareDetail(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
+              
+              <div className="p-4">
+                <div className="mb-4">
+                  <h4 className="font-bold text-gray-800 text-xl mb-2">
+                    {showWelfareDetail.name || showWelfareDetail.title}
+                  </h4>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-sm">
+                      {showWelfareDetail.category}
+                    </span>
+                    <span className="text-gray-600 text-sm">
+                      {showWelfareDetail.agency}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {showWelfareDetail.content && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📋 내용</h5>
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                        {showWelfareDetail.content}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.targetGroup && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">👥 지원대상</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.targetGroup}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.applicationPeriod && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📅 신청기간</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.applicationPeriod}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.applicationMethod && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📝 신청방법</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.applicationMethod}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.contact && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">📞 문의처</h5>
+                      <p className="text-gray-700 text-sm">
+                        {showWelfareDetail.contact}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {showWelfareDetail.url && (
+                    <div>
+                      <h5 className="font-medium text-gray-800 mb-2">🔗 관련 링크</h5>
+                      <a 
+                        href={showWelfareDetail.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 text-sm hover:underline"
+                      >
+                        자세한 내용 보기 →
+                      </a>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <button 
+                    onClick={() => setShowWelfareDetail(null)}
+                    className="w-full bg-gray-800 text-white py-3 rounded-xl hover:bg-gray-700 transition-colors"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
