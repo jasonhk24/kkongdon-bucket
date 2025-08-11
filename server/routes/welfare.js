@@ -7,21 +7,24 @@ router.get('/search', (req, res) => {
   try {
     const { q: query, category, limit = 10 } = req.query;
     
-    let results = dataProcessor.searchWelfare(query);
+    let allResults = dataProcessor.searchWelfare(query);
     
     // 카테고리 필터링
     if (category) {
-      results = results.filter(item => item.category === category);
+      allResults = allResults.filter(item => item.category === category);
     }
     
+    const totalCount = allResults.length;
+    
     // 결과 제한
-    results = results.slice(0, parseInt(limit));
+    const limitedResults = allResults.slice(0, parseInt(limit));
     
     res.json({
       success: true,
       data: {
-        results,
-        total: results.length,
+        results: limitedResults,
+        total: totalCount,
+        showing: limitedResults.length,
         query: query || 'all'
       }
     });
@@ -40,19 +43,21 @@ router.get('/all', (req, res) => {
   try {
     const { category, limit = 20 } = req.query;
     
-    let welfareData = dataProcessor.welfareData;
+    let allWelfareData = dataProcessor.welfareData;
     
     if (category) {
-      welfareData = welfareData.filter(item => item.category === category);
+      allWelfareData = allWelfareData.filter(item => item.category === category);
     }
     
-    const results = welfareData.slice(0, parseInt(limit));
+    const totalCount = allWelfareData.length;
+    const limitedResults = allWelfareData.slice(0, parseInt(limit));
     
     res.json({
       success: true,
       data: {
-        results,
-        total: results.length
+        results: limitedResults,
+        total: totalCount,
+        showing: limitedResults.length
       }
     });
 

@@ -26,30 +26,162 @@ class DataProcessor {
   }
 
   async loadWelfareData() {
-    const welfareDataPath = path.join(__dirname, '../data/processed_welfare_data.json');
+    const csvPath = path.join(__dirname, '../data/welfare_data.csv');
+    const processedPath = path.join(__dirname, '../data/processed_welfare_data.json');
     
     try {
-      if (await fs.pathExists(welfareDataPath)) {
-        this.welfareData = await fs.readJson(welfareDataPath);
-      } else {
-        // CSV 데이터를 JSON으로 변환
-        await this.convertWelfareCSVToJSON();
+      // 이미 처리된 JSON 파일이 있고 CSV보다 최신이면 사용
+      if (await fs.pathExists(processedPath) && await fs.pathExists(csvPath)) {
+        const csvStats = await fs.stat(csvPath);
+        const jsonStats = await fs.stat(processedPath);
+        
+        if (jsonStats.mtime > csvStats.mtime) {
+          console.log('기존 처리된 복지 데이터 로드 중...');
+          this.welfareData = await fs.readJson(processedPath);
+          console.log(`복지 데이터 로드 완료: ${this.welfareData.length}개`);
+          return;
+        }
       }
+      
+      // CSV 파일을 새로 처리
+      console.log('CSV 파일에서 복지 데이터 로드 중...');
+      await this.convertWelfareCSVToJSON();
+      
     } catch (error) {
       console.error('복지 데이터 로드 실패:', error);
       // 더미 데이터로 대체
+      console.log('더미 데이터로 대체합니다.');
       this.welfareData = this.generateDummyWelfareData();
     }
   }
 
   async convertWelfareCSVToJSON() {
-    // 실제 CSV 파일이 있다면 처리, 없으면 더미 데이터 생성
-    this.welfareData = this.generateDummyWelfareData();
-    
-    // JSON 파일로 저장
+    const csvPath = path.join(__dirname, '../data/welfare_data.csv');
     const dataPath = path.join(__dirname, '../data/processed_welfare_data.json');
-    await fs.ensureDir(path.dirname(dataPath));
-    await fs.writeJson(dataPath, this.welfareData, { spaces: 2 });
+    
+    try {
+      if (await fs.pathExists(csvPath)) {
+        console.log('CSV 파일 파싱 시작...');
+        this.welfareData = [];
+        
+        return new Promise((resolve, reject) => {
+          const results = [];
+          
+          fs.createReadStream(csvPath)
+            .pipe(csv())
+            .on('data', (row) => {
+              // CSV 행을 우리 형식으로 변환
+              const welfareItem = {
+                id: row.policy_id || `w_${Math.random().toString(36).substr(2, 9)}`,
+                name: row.policy_name || '정책명 없음',
+                title: row.policy_name || '정책명 없음',
+                summary: row.policy_summary || '',
+                content: row.service_content_detail || row.policy_summary || '',
+                targetGroup: row.target_audience_description || '',
+                benefits: this.extractBenefits(row.service_content_detail || ''),
+                applicationMethod: row.application_method_description || '',
+                applicationPeriod: row.support_cycle || '상시',
+                contact: row.contact_info_phone || '',
+                agency: row.governing_body_name || '',
+                url: row.application_link || '',
+                relatedKeywords: this.extractKeywords(row.policy_name + ' ' + row.policy_summary),
+                category: this.categorizePolicy(row.policy_name + ' ' + row.policy_summary),
+                region: row.region_name || '전국',
+                lastUpdated: row.last_updated || '',
+                rawText: row.raw_text_for_search || ''
+              };
+              
+              results.push(welfareItem);
+            })
+            .on('end', () => {
+              this.welfareData = results;
+              console.log(`CSV 파싱 완료: ${this.welfareData.length}개 정책 로드`);
+              
+              // JSON 파일로 저장
+              fs.ensureDir(path.dirname(dataPath))
+                .then(() => fs.writeJson(dataPath, this.welfareData, { spaces: 2 }))
+                .then(() => {
+                  console.log('복지 데이터 JSON 파일 저장 완료');
+                  resolve();
+                })
+                .catch(reject);
+            })
+            .on('error', reject);
+        });
+      } else {
+        console.log('CSV 파일이 없습니다. 더미 데이터를 사용합니다.');
+        this.welfareData = this.generateDummyWelfareData();
+        
+        // JSON 파일로 저장
+        await fs.ensureDir(path.dirname(dataPath));
+        await fs.writeJson(dataPath, this.welfareData, { spaces: 2 });
+      }
+    } catch (error) {
+      console.error('CSV 변환 중 오류:', error);
+      this.welfareData = this.generateDummyWelfareData();
+    }
+  }
+
+  extractBenefits(content) {
+    // 내용에서 혜택 추출 (간단한 키워드 기반)
+    const benefits = [];
+    if (content.includes('지원') || content.includes('혜택')) {
+      const sentences = content.split(/[.!?]/).filter(s => s.trim());
+      sentences.forEach(sentence => {
+        if ((sentence.includes('지원') || sentence.includes('혜택')) && sentence.length < 100) {
+          benefits.push(sentence.trim());
+        }
+      });
+    }
+    return benefits.length > 0 ? benefits.slice(0, 3) : ['정책 혜택 정보'];
+  }
+
+  extractKeywords(text) {
+    // 텍스트에서 키워드 추출
+    const commonKeywords = [
+      '청년', '월세', '세액공제', '소득공제', '연말정산', '적금', '보험',
+      '대출', '카드', '청약', '연금', '장려금', '지원금', '혜택',
+      '절세', '환급', '공제', '비과세', '노인', '아동', '주거', '의료',
+      '교육', '출산', '육아', '취업', '창업', '문화', '복지', '생활',
+      '저소득', '한부모', '장애인', '농업', '어업'
+    ];
+
+    const keywords = [];
+    const lowerText = text.toLowerCase();
+    
+    commonKeywords.forEach(keyword => {
+      if (lowerText.includes(keyword)) {
+        keywords.push(keyword);
+      }
+    });
+
+    return keywords.length > 0 ? keywords : ['복지'];
+  }
+
+  categorizePolicy(text) {
+    // 정책을 카테고리로 분류
+    const categories = {
+      '주거': ['월세', '주거', '임대', '주택', '아파트', '전세'],
+      '자산형성': ['청년도약', '적금', '자산', '저축', '투자'],
+      '취업지원': ['취업', '일자리', '구직', '채용', '인턴'],
+      '생활지원': ['생활비', '장려금', '수당', '지원금'],
+      '의료': ['의료', '건강', '병원', '치료', '약'],
+      '교육': ['교육', '학비', '장학', '학습', '연수'],
+      '노후준비': ['연금', '노후', '은퇴', '개인연금'],
+      '출산육아': ['출산', '육아', '아동', '보육', '유치원'],
+      '문화': ['문화', '예술', '체육', '관광', '여행'],
+      '농어업': ['농업', '어업', '농민', '어민', '농촌']
+    };
+
+    const lowerText = text.toLowerCase();
+    
+    for (const [category, keywords] of Object.entries(categories)) {
+      if (keywords.some(keyword => lowerText.includes(keyword))) {
+        return category;
+      }
+    }
+
+    return '기타';
   }
 
   generateDummyWelfareData() {

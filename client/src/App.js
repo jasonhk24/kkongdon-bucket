@@ -25,6 +25,8 @@ const App = () => {
   const [selectedWelfareCategory, setSelectedWelfareCategory] = useState('');
   const [isWelfareLoading, setIsWelfareLoading] = useState(false);
   const [showWelfareDetail, setShowWelfareDetail] = useState(null);
+  const [showAllWelfare, setShowAllWelfare] = useState(false);
+  const [totalWelfareCount, setTotalWelfareCount] = useState(0);
   
   // 카운트업 애니메이션
   const [displaySaved, setDisplaySaved] = useState(0);
@@ -219,7 +221,7 @@ const App = () => {
     setIsWelfareLoading(true);
     try {
       const params = {
-        limit: 20
+        limit: showAllWelfare ? 1000 : 5  // 전체보기 상태에 따라 limit 조정
       };
       
       if (selectedWelfareCategory) {
@@ -229,10 +231,12 @@ const App = () => {
       const response = await welfareAPI.search(searchQuery, params);
       if (response.success) {
         setWelfareResults(response.data.results);
+        setTotalWelfareCount(response.data.total || response.data.results.length);
       }
     } catch (error) {
       console.error('복지 정보 검색 오류:', error);
       setWelfareResults([]);
+      setTotalWelfareCount(0);
     } finally {
       setIsWelfareLoading(false);
     }
@@ -243,7 +247,7 @@ const App = () => {
     setIsWelfareLoading(true);
     try {
       const params = {
-        limit: 20
+        limit: showAllWelfare ? 1000 : 5  // 전체보기 상태에 따라 limit 조정
       };
       
       if (selectedWelfareCategory) {
@@ -253,12 +257,26 @@ const App = () => {
       const response = await welfareAPI.getAll(params);
       if (response.success) {
         setWelfareResults(response.data.results);
+        setTotalWelfareCount(response.data.total || response.data.results.length);
       }
     } catch (error) {
       console.error('복지 정보 로드 오류:', error);
       setWelfareResults([]);
+      setTotalWelfareCount(0);
     } finally {
       setIsWelfareLoading(false);
+    }
+  };
+
+  // 전체보기 토글 함수
+  const toggleShowAllWelfare = async () => {
+    setShowAllWelfare(!showAllWelfare);
+    // 현재 검색어가 있으면 재검색, 없으면 전체 로드
+    const currentQuery = welfareSearchRef.current?.value?.trim();
+    if (currentQuery) {
+      await searchWelfare(currentQuery);
+    } else {
+      await loadAllWelfare();
     }
   };
 
@@ -283,7 +301,7 @@ const App = () => {
         loadAllWelfare();
       }
     }
-  }, [selectedWelfareCategory]);
+  }, [selectedWelfareCategory, showAllWelfare]);
 
   // 추천상품 화면 진입 시 초기 데이터 로드
   useEffect(() => {
@@ -689,9 +707,9 @@ const App = () => {
         {/* 🔥 인기 상품 */}
         <div className="mb-8">
           <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
-          <div className="flex space-x-4 overflow-x-auto pb-4">
+          <div className="space-y-4">
             {financeProducts.filter(product => product.isRecommended).map((product) => (
-              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 min-w-80 text-white shadow-lg">
+              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 w-full text-white shadow-lg">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <div className="text-sm opacity-90 mb-1">{product.bank}</div>
@@ -705,7 +723,7 @@ const App = () => {
                   <div className="text-sm opacity-90 mb-1">예상 절세액</div>
                   <div className="text-2xl font-bold">연 {product.expectedSavings?.toLocaleString() || '0'}원</div>
                 </div>
-                <div className="text-sm opacity-90 mb-6">
+                <div className="text-sm opacity-90 mb-6 whitespace-pre-line">
                   {product.description}
                 </div>
                 <button className="w-full bg-white text-yellow-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all">
@@ -719,12 +737,23 @@ const App = () => {
         {/* 🔍 복지 정보 검색 섹션 (실제 데이터) */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
+            <div>
+              <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
+              {totalWelfareCount > 0 && (
+                <p className="text-sm text-gray-600 mt-1">
+                  총 {totalWelfareCount.toLocaleString()}개 정책 중 {welfareResults.length}개 표시
+                </p>
+              )}
+            </div>
             <button 
-              onClick={() => setSelectedWelfareCategory('')}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              onClick={toggleShowAllWelfare}
+              className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                showAllWelfare 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
             >
-              전체보기
+              {showAllWelfare ? '간단히 보기' : '전체 보기'}
             </button>
           </div>
 
