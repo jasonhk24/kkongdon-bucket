@@ -3,9 +3,43 @@ const router = express.Router();
 const fs = require('fs');
 const csv = require('csv-parser');
 const path = require('path');
+const welfareDataService = require('../services/welfareDataService');
 
-// CSV에서 직접 복지 데이터 읽기 (임베딩 없이)
+// 메모리에서 복지 데이터 검색 (빠른 응답)
 router.get('/csv', async (req, res) => {
+  try {
+    console.log('📄 메모리에서 복지 데이터 검색 요청');
+    const { q: query, category, limit = 20, page = 1 } = req.query;
+    
+    // 데이터가 로딩되지 않은 경우
+    if (!welfareDataService.isDataLoaded()) {
+      return res.status(503).json({
+        success: false,
+        error: '복지 데이터가 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.'
+      });
+    }
+
+    // 메모리에서 검색
+    const searchResult = welfareDataService.searchWelfareData(query, category, limit, page);
+    
+    console.log(`📊 메모리에서 ${searchResult.results.length}개 데이터 검색 완료 (전체: ${searchResult.total}개)`);
+    
+    res.json({
+      success: true,
+      data: searchResult
+    });
+
+  } catch (error) {
+    console.error('❌ 복지 데이터 검색 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: '복지 데이터 검색 중 오류가 발생했습니다.'
+    });
+  }
+});
+
+// CSV에서 직접 복지 데이터 읽기 (임베딩 없이) - 백업용
+router.get('/csv-direct', async (req, res) => {
   try {
     console.log('📄 CSV에서 복지 데이터 직접 읽기 요청');
     const { q: query, category, limit = 20, page = 1 } = req.query;
