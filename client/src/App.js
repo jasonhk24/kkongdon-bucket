@@ -369,7 +369,7 @@ const App = () => {
         params.append('category', selectedWelfareCategory);
       }
 
-      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/welfare/csv?${params}`;
+      const apiUrl = `${process.env.NODE_ENV === 'production' ? 'https://kkongdon-bucket.vercel.app' : process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/welfare/csv?${params}`;
       console.log('🔍 CSV 검색 API 호출:', apiUrl);
 
       const response = await fetch(apiUrl);

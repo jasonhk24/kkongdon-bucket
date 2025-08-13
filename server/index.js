@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path');
 require('dotenv').config();
 
 // 라우트만 import (다른 서비스는 제외)
@@ -96,3 +97,6 @@ app.listen(PORT, '127.0.0.1', (err) => {
   //     console.error('⚠️ RAG 시스템 초기화 실패 (fallback 모드로 운영):', error.message);
   //   });
 });
+
+// Vercel 서버리스 함수용 export
+module.exports = app;
