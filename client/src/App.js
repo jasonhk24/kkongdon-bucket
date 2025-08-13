@@ -15,6 +15,8 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [faqData, setFaqData] = useState([]);
   const chatInputRef = useRef(null);
+  const bucketListRef = useRef(null);
+  const targetAmountRef = useRef(null);
   
   // 복지 정보 관련 상태
   const [welfareResults, setWelfareResults] = useState([]);
@@ -437,11 +439,16 @@ const App = () => {
   };
 
   const handleOnboardingComplete = () => {
-    if (bucketList && targetAmount) {
+    const bucketListValue = bucketListRef.current?.value?.trim();
+    const targetAmountValue = targetAmountRef.current?.value?.replace(/[^0-9]/g, '');
+    
+    if (bucketListValue && targetAmountValue) {
+      setBucketList(bucketListValue);
+      setTargetAmount(targetAmountValue);
       setBucketLists([{ 
         id: 1, 
-        name: bucketList, 
-        target: parseInt(targetAmount), 
+        name: bucketListValue, 
+        target: parseInt(targetAmountValue), 
         saved: 0,
         deadline: '2024-12-31'
       }]);
@@ -470,15 +477,8 @@ const App = () => {
               어떤 버킷리스트를 이루고 싶나요? 💫
             </label>
             <textarea
+              ref={bucketListRef}
               defaultValue={bucketList}
-              onInput={(e) => {
-                const value = e.target.value;
-                if (value.length <= 50) {
-                  setBucketList(value);
-                } else {
-                  e.target.value = bucketList;
-                }
-              }}
               placeholder="예: 제주도 여행, 맥북 구매, 어학연수..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 resize-none"
               maxLength="50"
@@ -492,19 +492,11 @@ const App = () => {
             </label>
             <div className="relative">
               <input
+                ref={targetAmountRef}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 defaultValue={targetAmount}
-                onInput={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 12) {
-                    setTargetAmount(value);
-                    e.target.value = value;
-                  } else {
-                    e.target.value = targetAmount;
-                  }
-                }}
                 placeholder="1000000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
               />
