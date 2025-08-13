@@ -470,8 +470,15 @@ const App = () => {
               어떤 버킷리스트를 이루고 싶나요? 💫
             </label>
             <textarea
-              value={bucketList}
-              onChange={(e) => setBucketList(e.target.value)}
+              defaultValue={bucketList}
+              onInput={(e) => {
+                const value = e.target.value;
+                if (value.length <= 50) {
+                  setBucketList(value);
+                } else {
+                  e.target.value = bucketList;
+                }
+              }}
               placeholder="예: 제주도 여행, 맥북 구매, 어학연수..."
               className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 resize-none"
               maxLength="50"
@@ -488,11 +495,14 @@ const App = () => {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                value={targetAmount}
-                onChange={(e) => {
+                defaultValue={targetAmount}
+                onInput={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
                   if (value.length <= 12) {
                     setTargetAmount(value);
+                    e.target.value = value;
+                  } else {
+                    e.target.value = targetAmount;
                   }
                 }}
                 placeholder="1000000"
@@ -757,7 +767,11 @@ const App = () => {
                 type="text"
                 placeholder="궁금한 것을 물어보세요..."
                 className="flex-1 p-3 border border-gray-200 rounded-xl rounded-r-none focus:outline-none focus:border-blue-400"
-                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    sendChatMessage();
+                  }
+                }}
                 disabled={isLoading}
               />
               <button 
