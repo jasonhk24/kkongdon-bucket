@@ -400,16 +400,11 @@ class DataProcessor {
   // 검색 메서드들
   searchWelfare(query) {
     if (!query) return this.welfareData;
-    
-    const lowercaseQuery = query.toLowerCase();
-    return this.welfareData.filter(item => 
-      item.name.toLowerCase().includes(lowercaseQuery) ||
-      item.summary.toLowerCase().includes(lowercaseQuery) ||
-      item.content.toLowerCase().includes(lowercaseQuery) ||
-      item.relatedKeywords.some(keyword => 
-        keyword.toLowerCase().includes(lowercaseQuery)
-      )
-    );
+    const q = String(query).toLowerCase();
+    return this.welfareData.filter(item => {
+      const hay = `${item.name} ${item.summary} ${item.content} ${item.target} ${item.agency} ${(item.relatedKeywords||[]).join(' ')}`.toLowerCase();
+      return hay.includes(q);
+    });
   }
 
   getWelfareById(id) {

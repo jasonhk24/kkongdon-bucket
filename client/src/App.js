@@ -299,51 +299,26 @@ const App = () => {
     setChatMessages(newMessages);
     setIsLoading(true);
 
-    // 간단한 챗봇 응답 시스템
-    const message = userMessage.toLowerCase();
-    let response = '';
-    
-    if (message.includes('청년도약') || message.includes('도약계좌')) {
-      response = `청년도약계좌에 대해 알려드릴게요! 📊
-
-✅ 가입조건: 만 19~34세 청년, 개인소득 6,000만원 이하
-💰 혜택: 5년간 매월 최대 70만원 납입 가능, 정부기여금 지원
-📅 신청: 인터넷뱅킹, 모바일뱅킹, 영업점 방문`;
-    } else if (message.includes('월세') || message.includes('세액공제')) {
-      response = `월세 세액공제에 대해 설명드려요! 🏠
-
-✅ 대상: 무주택 세대주, 국민주택규모 임차
-💰 혜택: 연간 750만원 한도 12% 세액공제
-📋 서류: 임대차계약서, 주민등록등본, 계좌이체 영수증`;
-    } else if (message.includes('청년내일') || message.includes('내일저축')) {
-      response = `청년내일저축계좌 안내해드려요! 💪
-
-✅ 대상: 만 15~39세 생계급여 수급 청년
-💰 혜택: 본인 저축액과 동일한 금액을 정부가 매칭 지원
-📅 신청: 주민센터 또는 온라인 신청`;
-    } else if (message.includes('주택청약') || message.includes('청약')) {
-      response = `주택청약종합저축 정보입니다! 🏘️
-
-✅ 가입조건: 만 19세 이상 무주택자
-💰 세제혜택: 연간 240만원 한도 40% 소득공제
-🎯 청약혜택: 국민주택, 민간분양 청약 가능`;
-    } else {
-      response = `절세 및 복지정보 도우미입니다! 😊
-
-💡 자주 묻는 질문들:
-• 청년도약계좌 가입 조건
-• 월세 세액공제 받는 방법  
-• 청년내일저축계좌 혜택
-• 주택청약종합저축 소득공제
-
-더 구체적인 질문을 해주시면 자세히 안내해드릴게요!`;
+    try {
+      const response = await chatbotAPI.sendMessage(userMessage, newMessages.slice(-5));
+      if (response.success && response.data) {
+        setChatMessages(prev => [...prev, {
+          role: 'assistant',
+          content: response.data.message,
+          relevantInfo: response.data.relevantInfo || [],
+          timestamp: response.data.timestamp || new Date().toISOString()
+        }]);
+      } else {
+        throw new Error(response.error || '응답 형식 오류');
+      }
+    } catch (error) {
+      // 서버 미응답 시 간단 Fallback
+      const message = userMessage.toLowerCase();
+      const quick = message.includes('청년도약') ? '청년도약계좌는 만 19~34세 청년 대상 자산형성 상품입니다.'
+        : message.includes('월세') ? '월세 세액공제는 연 750만원 한도 12% 공제됩니다.'
+        : '절세/복지 관련 질문을 해주세요!';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: quick, timestamp: new Date().toISOString() }]);
     }
-    
-    setChatMessages(prev => [...prev, {
-      role: 'assistant',
-      content: response,
-      timestamp: new Date().toISOString()
-    }]);
     
     setIsLoading(false);
   };

@@ -2,22 +2,36 @@ const express = require('express');
 const router = express.Router();
 const dataProcessor = require('../services/dataProcessor');
 
-// 복지 정보 검색
+// 복지 정보 검색 (페이지네이션/정렬 지원)
 router.get('/search', (req, res) => {
   try {
-    const { q: query, category, limit = 10 } = req.query;
+    const { q: query, category, limit = 10, page, offset, sortBy = 'latest' } = req.query;
     
-    let allResults = dataProcessor.searchWelfare(query);
+    let allResults = dataProcessor.searchWelfare(query || '');
     
     // 카테고리 필터링
     if (category) {
       allResults = allResults.filter(item => item.category === category);
     }
     
-    const totalCount = allResults.length;
+    // 정렬 (latest: 최근 업데이트 순, popular: 간단히 이름 기준)
+    allResults = [...allResults].sort((a, b) => {
+      if (sortBy === 'popular') {
+        return (b.benefits?.length || 0) - (a.benefits?.length || 0);
+      }
+      const aTime = new Date(a.lastUpdated || 0).getTime();
+      const bTime = new Date(b.lastUpdated || 0).getTime();
+      return bTime - aTime;
+    });
     
-    // 결과 제한
-    const limitedResults = allResults.slice(0, parseInt(limit));
+    const totalCount = allResults.length;
+    const numericLimit = Math.max(1, parseInt(limit));
+    const numericOffset = offset !== undefined ? parseInt(offset) : (Math.max(1, parseInt(page) || 1) - 1) * numericLimit;
+    
+    // 페이지 슬라이싱
+    const limitedResults = allResults.slice(numericOffset, numericOffset + numericLimit);
+    const currentPage = Math.floor(numericOffset / numericLimit) + 1;
+    const totalPages = Math.max(1, Math.ceil(totalCount / numericLimit));
     
     res.json({
       success: true,
@@ -25,7 +39,10 @@ router.get('/search', (req, res) => {
         results: limitedResults,
         total: totalCount,
         showing: limitedResults.length,
-        query: query || 'all'
+        query: query || 'all',
+        page: currentPage,
+        limit: numericLimit,
+        totalPages
       }
     });
 
@@ -38,26 +55,42 @@ router.get('/search', (req, res) => {
   }
 });
 
-// 모든 복지 정보 가져오기
+// 모든 복지 정보 가져오기 (페이지네이션/정렬 지원)
 router.get('/all', (req, res) => {
   try {
-    const { category, limit = 20 } = req.query;
+    const { category, limit = 20, page, offset, sortBy = 'latest' } = req.query;
     
     let allWelfareData = dataProcessor.welfareData;
     
     if (category) {
       allWelfareData = allWelfareData.filter(item => item.category === category);
     }
-    
+    // 정렬
+    allWelfareData = [...allWelfareData].sort((a, b) => {
+      if (sortBy === 'popular') {
+        return (b.benefits?.length || 0) - (a.benefits?.length || 0);
+      }
+      const aTime = new Date(a.lastUpdated || 0).getTime();
+      const bTime = new Date(b.lastUpdated || 0).getTime();
+      return bTime - aTime;
+    });
+
     const totalCount = allWelfareData.length;
-    const limitedResults = allWelfareData.slice(0, parseInt(limit));
+    const numericLimit = Math.max(1, parseInt(limit));
+    const numericOffset = offset !== undefined ? parseInt(offset) : (Math.max(1, parseInt(page) || 1) - 1) * numericLimit;
+    const limitedResults = allWelfareData.slice(numericOffset, numericOffset + numericLimit);
+    const currentPage = Math.floor(numericOffset / numericLimit) + 1;
+    const totalPages = Math.max(1, Math.ceil(totalCount / numericLimit));
     
     res.json({
       success: true,
       data: {
         results: limitedResults,
         total: totalCount,
-        showing: limitedResults.length
+        showing: limitedResults.length,
+        page: currentPage,
+        limit: numericLimit,
+        totalPages
       }
     });
 
