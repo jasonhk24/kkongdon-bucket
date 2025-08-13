@@ -25,7 +25,8 @@ const App = () => {
   const [selectedWelfareCategory, setSelectedWelfareCategory] = useState('');
   const [isWelfareLoading, setIsWelfareLoading] = useState(false);
   const [showWelfareDetail, setShowWelfareDetail] = useState(null);
-  const [showAllWelfare, setShowAllWelfare] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
   const [totalWelfareCount, setTotalWelfareCount] = useState(0);
   
   // 카운트업 애니메이션
@@ -208,20 +209,21 @@ const App = () => {
   };
 
   // 복지 정보 검색 함수
-  const searchWelfare = async (query) => {
+  const searchWelfare = async (query, page = currentPage) => {
     // 매개변수가 없으면 ref에서 읽기
     const searchQuery = query || welfareSearchRef.current?.value?.trim() || '';
     
     if (!searchQuery) {
       // 빈 검색어면 전체 데이터 로드
-      await loadAllWelfare();
+      await loadAllWelfare(page);
       return;
     }
 
     setIsWelfareLoading(true);
     try {
       const params = {
-        limit: showAllWelfare ? 1000 : 5  // 전체보기 상태에 따라 limit 조정
+        limit: itemsPerPage,
+        offset: (page - 1) * itemsPerPage
       };
       
       if (selectedWelfareCategory) {
@@ -232,6 +234,7 @@ const App = () => {
       if (response.success) {
         setWelfareResults(response.data.results);
         setTotalWelfareCount(response.data.total || response.data.results.length);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('복지 정보 검색 오류:', error);
@@ -243,11 +246,12 @@ const App = () => {
   };
 
   // 전체 복지 정보 로드
-  const loadAllWelfare = async () => {
+  const loadAllWelfare = async (page = currentPage) => {
     setIsWelfareLoading(true);
     try {
       const params = {
-        limit: showAllWelfare ? 1000 : 5  // 전체보기 상태에 따라 limit 조정
+        limit: itemsPerPage,
+        offset: (page - 1) * itemsPerPage
       };
       
       if (selectedWelfareCategory) {
@@ -258,6 +262,7 @@ const App = () => {
       if (response.success) {
         setWelfareResults(response.data.results);
         setTotalWelfareCount(response.data.total || response.data.results.length);
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('복지 정보 로드 오류:', error);
@@ -268,17 +273,18 @@ const App = () => {
     }
   };
 
-  // 전체보기 토글 함수
-  const toggleShowAllWelfare = async () => {
-    setShowAllWelfare(!showAllWelfare);
-    // 현재 검색어가 있으면 재검색, 없으면 전체 로드
+  // 페이지 변경 함수
+  const handlePageChange = async (page) => {
     const currentQuery = welfareSearchRef.current?.value?.trim();
     if (currentQuery) {
-      await searchWelfare(currentQuery);
+      await searchWelfare(currentQuery, page);
     } else {
-      await loadAllWelfare();
+      await loadAllWelfare(page);
     }
   };
+
+  // 총 페이지 수 계산
+  const totalPages = Math.ceil(totalWelfareCount / itemsPerPage);
 
   // 복지 정보 상세 조회
   const getWelfareDetail = async (id) => {
@@ -292,16 +298,17 @@ const App = () => {
     }
   };
 
-  // 카테고리 변경 시 검색 재실행
+  // 카테고리 변경 시 검색 재실행 (페이지를 1로 리셋)
   useEffect(() => {
     if (currentScreen === 'recommend') {
+      setCurrentPage(1);
       if (welfareSearchRef.current?.value?.trim()) {
-        searchWelfare();
+        searchWelfare(welfareSearchRef.current.value.trim(), 1);
       } else {
-        loadAllWelfare();
+        loadAllWelfare(1);
       }
     }
-  }, [selectedWelfareCategory, showAllWelfare]);
+  }, [selectedWelfareCategory]);
 
   // 추천상품 화면 진입 시 초기 데이터 로드
   useEffect(() => {
@@ -695,8 +702,8 @@ const App = () => {
                 
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-gray-500">{product.condition}</div>
-                  <button className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors">
-                    자세히 보기
+                  <button className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-md">
+                    자세히 보기 →
                   </button>
                 </div>
               </div>
@@ -707,9 +714,9 @@ const App = () => {
         {/* 🔥 인기 상품 */}
         <div className="mb-8">
           <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
-          <div className="space-y-4">
-            {financeProducts.filter(product => product.isRecommended).map((product) => (
-              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 w-full text-white shadow-lg">
+          <div className="flex space-x-4 overflow-x-auto pb-4">
+            {financeProducts.filter(product => product.isRecommended && product.bank?.includes('KB')).map((product) => (
+              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 min-w-80 text-white shadow-lg flex-shrink-0">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <div className="text-sm opacity-90 mb-1">{product.bank}</div>
@@ -736,25 +743,13 @@ const App = () => {
 
         {/* 🔍 복지 정보 검색 섹션 (실제 데이터) */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
-              {totalWelfareCount > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
-                  총 {totalWelfareCount.toLocaleString()}개 정책 중 {welfareResults.length}개 표시
-                </p>
-              )}
-            </div>
-            <button 
-              onClick={toggleShowAllWelfare}
-              className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                showAllWelfare 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {showAllWelfare ? '간단히 보기' : '전체 보기'}
-            </button>
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-800">🔍 복지 정보 검색</h3>
+            {totalWelfareCount > 0 && (
+              <p className="text-sm text-gray-600 mt-1">
+                총 {totalWelfareCount.toLocaleString()}개 정책 중 {((currentPage - 1) * itemsPerPage + 1)}~{Math.min(currentPage * itemsPerPage, totalWelfareCount)}개 표시 (페이지 {currentPage}/{totalPages})
+              </p>
+            )}
           </div>
 
           {/* 검색창 */}
@@ -817,31 +812,39 @@ const App = () => {
               </div>
             ) : welfareResults.length > 0 ? (
               welfareResults.map((welfare, index) => (
-                <div key={welfare.id || index} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-2">
+                <div key={welfare.id || index} className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all border border-gray-100">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-bold text-gray-800 text-lg mb-1">{welfare.name || welfare.title}</h4>
-                      <p className="text-gray-600 text-sm mb-2">{welfare.agency || welfare.category}</p>
+                      <h4 className="font-bold text-gray-800 text-lg mb-2 leading-relaxed">{welfare.name || welfare.title}</h4>
+                      <p className="text-gray-600 text-sm mb-3 font-medium">{welfare.agency || welfare.category}</p>
                     </div>
-                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">
+                    <span className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
                       {welfare.category}
                     </span>
                   </div>
                   
-                  <p className="text-gray-700 text-sm mb-3 line-clamp-2">
-                    {welfare.content || welfare.description || '상세 내용을 확인하세요.'}
-                  </p>
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {(welfare.content || welfare.description || '상세 내용을 확인하세요.').length > 120 
+                        ? `${(welfare.content || welfare.description || '상세 내용을 확인하세요.').substring(0, 120)}...`
+                        : (welfare.content || welfare.description || '상세 내용을 확인하세요.')
+                      }
+                    </p>
+                  </div>
                   
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-gray-500">
-                      {welfare.targetGroup && `대상: ${welfare.targetGroup}`}
-                      {welfare.applicationPeriod && ` | 신청기간: ${welfare.applicationPeriod}`}
+                      {welfare.applicationPeriod && (
+                        <div className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded-md">
+                          📅 신청기간: {welfare.applicationPeriod}
+                        </div>
+                      )}
                     </div>
                     <button 
                       onClick={() => getWelfareDetail(welfare.id)}
-                      className="bg-gray-800 text-white px-3 py-1 rounded-lg text-sm hover:bg-gray-700 transition-colors"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-md"
                     >
-                      자세히 보기
+                      자세히 보기 →
                     </button>
                   </div>
                 </div>
@@ -854,36 +857,59 @@ const App = () => {
               </div>
             )}
           </div>
-        </div>
-        
-        <div className="mb-8">
-          <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
-          <div className="flex space-x-4 overflow-x-auto pb-4">
-            {financeProducts.filter(product => product.isRecommended).map((product) => (
-              <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 min-w-80 text-white shadow-lg">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="text-sm opacity-90 mb-1">{product.bank}</div>
-                    <h3 className="text-xl font-bold">{product.name}</h3>
-                  </div>
-                  <div className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
-                    {product.isRecommended ? '추천' : 'NEW'}
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <div className="text-sm opacity-90 mb-1">예상 절세액</div>
-                  <div className="text-2xl font-bold">연 {product.expectedSavings.toLocaleString()}원</div>
-                </div>
-                <div className="text-sm opacity-90 mb-6">
-                  {product.description}
-                </div>
-                <button className="w-full bg-white text-yellow-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all">
-                  바로 신청하기
-                </button>
+
+          {/* 페이지네이션 */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mb-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="px-3 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                이전
+              </button>
+              
+              {/* 페이지 번호들 */}
+              <div className="flex space-x-1">
+                {[...Array(Math.min(5, totalPages))].map((_, index) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = index + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = index + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + index;
+                  } else {
+                    pageNum = currentPage - 2 + index;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`w-10 h-10 rounded-lg text-sm transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+              
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="px-3 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                다음
+              </button>
+            </div>
+          )}
         </div>
+
 
         {/* 복지 정보 상세 모달 */}
         {showWelfareDetail && (
