@@ -3,7 +3,7 @@ import axios from 'axios';
 // 환경에 따른 API URL 설정
 const getApiBaseUrl = () => {
   if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_API_URL || 'https://kkongdon-bucket-api.railway.app/api';
+    return process.env.REACT_APP_API_URL || 'https://kkongdon-bucket-production.up.railway.app/api';
   }
   return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 };

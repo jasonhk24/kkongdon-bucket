@@ -63,11 +63,55 @@ const App = () => {
     }
   }, [currentScreen]);
 
-  // 초기 데이터 설정 (fallback)
+  // 초기 데이터 로드
   useEffect(() => {
-    // 복지정보 초기 데이터 설정
-    if (recommendedWelfareData.length === 0) {
-      setRecommendedWelfareData([
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      console.log('초기 데이터 로딩 시작...');
+      
+      // 병렬로 모든 데이터 로드
+      const [financeData, recommendedWelfare, categoriesData, faqData, taxData] = await Promise.all([
+        financeAPI.getRecommended().catch(() => null),
+        welfareAPI.search('청년 적금 계좌', { limit: 3 }).catch(() => null),
+        welfareAPI.getCategories().catch(() => null),
+        chatbotAPI.getFAQ().catch(() => null),
+        financeAPI.getTips().catch(() => null)
+      ]);
+
+      // 금융상품 설정
+      if (financeData?.success && financeData.data) {
+        setFinanceProducts(financeData.data);
+      } else {
+        // 금융상품 fallback 데이터
+        setFinanceProducts([
+          {
+            id: 'kb-star-banking-original',
+            bank: 'KB국민은행',
+            name: 'KB Star Banking 정기예금',
+            expectedSavings: 480000,
+            description: '안정적인 예금상품\n연 최대 3.2% 금리\n1년~3년 선택 가능',
+            originalPrice: 10000000,
+            savingsRate: 0.048,
+            period: '1년',
+            rating: 4.5,
+            reviewCount: 256,
+            category: 'savings',
+            badge: '안정성',
+            tags: ['예금', '안정'],
+            riskLevel: 'low'
+          }
+        ]);
+      }
+
+      // 추천 복지정보 설정 
+      if (recommendedWelfare?.success && recommendedWelfare.data?.results) {
+        setRecommendedWelfareData(recommendedWelfare.data.results);
+      } else {
+        // 복지정보 fallback 데이터
+        setRecommendedWelfareData([
         {
           id: 'youth-leap-account',
           name: '청년도약계좌',
@@ -96,11 +140,72 @@ const App = () => {
           url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003456'
         }
       ]);
-    }
+      }
 
-    // 금융상품 초기 데이터 설정
-    if (financeProducts.length === 0) {
-      setFinanceProducts([
+      // 카테고리 설정
+      if (categoriesData?.success && categoriesData.data) {
+        setWelfareCategories(categoriesData.data);
+      } else {
+        // 카테고리 fallback 데이터
+        setWelfareCategories([
+          { id: 'all', name: '전체', count: 5000 },
+          { id: 'youth', name: '청년지원', count: 850 },
+          { id: 'housing', name: '주거지원', count: 320 },
+          { id: 'job', name: '취업지원', count: 420 },
+          { id: 'education', name: '교육지원', count: 380 },
+          { id: 'finance', name: '금융지원', count: 290 }
+        ]);
+      }
+
+      // FAQ 설정
+      if (faqData?.success && faqData.data) {
+        setFaqData(faqData.data);
+      } else {
+        // FAQ fallback 데이터
+        setFaqData([
+          {
+            id: 1,
+            question: "월세 세액공제 받는 방법이 궁금해요",
+            answer: "월세 세액공제는 무주택 세대주가 총급여 7천만원 이하일 때 받을 수 있어요."
+          },
+          {
+            id: 2,
+            question: "청년도약계좌 조건이 어떻게 되나요?",
+            answer: "만 19~34세 청년으로 소득 요건을 충족하면 가입할 수 있어요."
+          }
+        ]);
+      }
+
+      // 절세 팁 설정
+      if (taxData?.success && taxData.data) {
+        setTaxTips(taxData.data);
+      } else {
+        // 절세 팁 fallback 데이터
+        setTaxTips([
+          {
+            id: 1,
+            title: "월세 세액공제 최대한 활용하기",
+            content: "무주택 세대주라면 월세액의 12%를 세액공제 받을 수 있어요.",
+            category: "세액공제",
+            tags: ["월세", "청년"],
+            savings: 750000
+          }
+        ]);
+      }
+
+      // 초기 복지 검색 결과 로드
+      loadAllWelfare();
+      
+      console.log('초기 데이터 로딩 완료');
+    } catch (error) {
+      console.error('초기 데이터 로딩 오류:', error);
+    }
+  };
+
+  const loadData = async () => {
+    // 실제 데이터 로드는 loadInitialData에서 처리됨
+    console.log('데이터 로딩 완료');
+  };
         {
           id: 'kb-star-banking-original',
           bank: 'KB국민은행',
@@ -330,9 +435,8 @@ const App = () => {
     await sendChatMessage();
   };
 
-  // 복지 정보 검색 함수 (간단 버전)
+  // 복지 정보 검색 함수 (API 연동)
   const searchWelfare = async (query, page = currentPage) => {
-    // 검색어가 없으면 전체 데이터 로드
     const searchQuery = query || welfareSearchRef.current?.value?.trim() || '';
     
     if (!searchQuery) {
@@ -341,9 +445,31 @@ const App = () => {
     }
 
     setIsWelfareLoading(true);
-    
-    // 간단한 더미 데이터 검색
-    const allData = [
+
+    try {
+      const offset = (page - 1) * itemsPerPage;
+      const response = await welfareAPI.search(searchQuery, {
+        limit: itemsPerPage,
+        offset: offset,
+        sortBy: sortBy
+      });
+
+      if (response?.success && response.data) {
+        setWelfareResults(response.data.results || []);
+        setTotalWelfareCount(response.data.total || 0);
+        setCurrentPage(page);
+      } else {
+        throw new Error('검색 결과 없음');
+      }
+    } catch (error) {
+      console.error('복지 검색 오류:', error);
+      // Fallback: 빈 결과
+      setWelfareResults([]);
+      setTotalWelfareCount(0);
+    } finally {
+      setIsWelfareLoading(false);
+    }
+  };
       {
         id: 'youth-monthly-rent',
         name: '청년 월세 한시 특별지원',
@@ -418,25 +544,71 @@ const App = () => {
     setIsWelfareLoading(false);
   };
 
-  // 전체 복지 정보 로드 (간단 버전)
+  // 전체 복지 정보 로드 (API 연동)
   const loadAllWelfare = async (page = currentPage) => {
     setIsWelfareLoading(true);
-    
-    // 단순한 전체 데이터
-    const allData = [
-      {
-        id: 'youth-monthly-rent',
-        name: '청년 월세 한시 특별지원',
-        agency: '국토교통부',
-        category: '주거지원',
-        content: '만 19~34세 청년의 월세 부담을 덜어주기 위해 월 최대 20만원씩 12개월간 지원하는 정책입니다.',
-        targetGroup: '만 19~34세 무주택 청년',
-        applicationPeriod: '2024년 상시',
-        url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004123'
-      },
-      {
-        id: 'birth-support',
-        name: '첫만남이용권',
+
+    try {
+      const offset = (page - 1) * itemsPerPage;
+      const response = await welfareAPI.getAll({
+        limit: itemsPerPage,
+        offset: offset,
+        sortBy: sortBy,
+        category: selectedWelfareCategory !== 'all' ? selectedWelfareCategory : undefined
+      });
+
+      if (response?.success && response.data) {
+        setWelfareResults(response.data.results || []);
+        setTotalWelfareCount(response.data.total || 0);
+        setCurrentPage(page);
+      } else {
+        throw new Error('데이터 로드 실패');
+      }
+    } catch (error) {
+      console.error('복지 정보 로드 오류:', error);
+      // Fallback: 빈 결과
+      setWelfareResults([]);
+      setTotalWelfareCount(0);
+    } finally {
+      setIsWelfareLoading(false);
+    }
+  };
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(totalWelfareCount / itemsPerPage);
+
+  // 복지 정보 상세 조회
+  const getWelfareDetail = async (welfare) => {
+    // URL이 있으면 새 탭에서 복지로 페이지 열기
+    if (welfare.url) {
+      window.open(welfare.url, '_blank');
+    } else {
+      // URL이 없으면 상세 모달 표시
+      setShowWelfareDetail(welfare);
+    }
+  };
+
+  // useEffect들
+  useEffect(() => {
+    if (selectedWelfareCategory !== 'all' || sortBy !== 'recent' || itemsPerPage !== 5) {
+      setCurrentPage(1);
+      const searchQuery = welfareSearchRef.current?.value?.trim();
+      if (searchQuery) {
+        searchWelfare(searchQuery, 1);
+      } else {
+        loadAllWelfare(1);
+      }
+    }
+  }, [selectedWelfareCategory, sortBy, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentScreen !== 'onboarding') {
+      loadData();
+    }
+  }, [currentScreen]);
+
+  const OnboardingScreen = () => (
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 p-6">
         agency: '보건복지부',
         category: '출산·보육',
         content: '2022년 1월 1일 이후 출생한 아동에게 국민행복카드 포인트 200만원을 지급하는 출산 지원 정책입니다.',
