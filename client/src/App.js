@@ -63,6 +63,177 @@ const App = () => {
     }
   }, [currentScreen]);
 
+  // 초기 데이터 설정 (fallback)
+  useEffect(() => {
+    // 복지정보 초기 데이터 설정
+    if (recommendedWelfareData.length === 0) {
+      setRecommendedWelfareData([
+        {
+          id: 'youth-leap-account',
+          name: '청년도약계좌',
+          agency: '기획재정부',
+          category: '청년지원',
+          content: '만 19~34세 청년이 5년간 매월 70만원 한도 내에서 자유롭게 납입하면 정부가 기여금을 지원하는 중장기 자산형성 지원 제도입니다.',
+          targetGroup: '만 19~34세 청년',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004090'
+        },
+        {
+          id: 'youth-tomorrow-savings',
+          name: '청년내일저축계좌',
+          agency: '보건복지부',
+          category: '자산형성지원',
+          content: '일하는 생계급여 수급자(청년)의 자립자금 마련을 위해 본인 저축액과 동일한 금액을 정부가 매칭 지원하는 사업입니다.',
+          targetGroup: '만 15~39세 생계급여 수급 청년',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003969'
+        },
+        {
+          id: 'housing-subscription',
+          name: '주택청약종합저축',
+          agency: '국토교통부',
+          category: '주거지원',
+          content: '주택 구입을 위한 청약 자격을 얻기 위해 가입하는 저축으로, 소득공제 혜택도 제공됩니다.',
+          targetGroup: '만 19세 이상 무주택자',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003456'
+        }
+      ]);
+    }
+
+    // 금융상품 초기 데이터 설정
+    if (financeProducts.length === 0) {
+      setFinanceProducts([
+        {
+          id: 'kb-star-banking-original',
+          bank: 'KB국민은행',
+          name: 'KB Star Banking 정기예금',
+          expectedSavings: 480000,
+          description: '안정적인 예금상품\n연 최대 3.2% 금리\n1년~3년 선택 가능',
+          isRecommended: true
+        },
+        {
+          id: 'kb-youth-dream',
+          bank: 'KB국민은행',
+          name: 'KB 청년꿈적금',
+          expectedSavings: 720000,
+          description: '청년 전용 적금\n연 최대 4.5% 금리\n12~36개월 자유선택',
+          isRecommended: true
+        }
+      ]);
+    }
+
+    // 복지 카테고리 초기 설정
+    if (welfareCategories.length === 0) {
+      setWelfareCategories(['주거지원', '출산·보육', '의료지원', '고용지원', '창업지원', '청년지원', '자산형성지원']);
+    }
+
+    // FAQ 초기 설정
+    if (faqData.length === 0) {
+      setFaqData([
+        {
+          id: 1,
+          question: "청년도약계좌 가입 조건이 무엇인가요?",
+          answer: "만 19~34세 청년이면 가입 가능하며, 소득 요건은 개인소득 6000만원 이하입니다."
+        },
+        {
+          id: 2,
+          question: "월세 세액공제는 어떻게 받나요?",
+          answer: "무주택 세대주로서 국민주택규모 주택을 임차하면 연간 750만원 한도로 12% 세액공제를 받을 수 있습니다."
+        },
+        {
+          id: 3,
+          question: "청년내일저축계좌는 누가 가입할 수 있나요?",
+          answer: "만 15~39세 생계급여 수급 청년 중 근로·사업소득이 있는 분이 가입 가능합니다."
+        },
+        {
+          id: 4,
+          question: "주택청약종합저축의 소득공제 한도는?",
+          answer: "연간 납입액 240만원 한도로 40% 소득공제를 받을 수 있습니다."
+        }
+      ]);
+    }
+
+    // 절세 팁 초기 설정
+    if (taxTips.length === 0) {
+      setTaxTips([
+        {
+          id: 1,
+          title: "월세 세액공제 신청하기",
+          content: "무주택자라면 월세의 12%를 세액공제 받을 수 있어요!",
+          category: "hot"
+        },
+        {
+          id: 2,
+          title: "연말정산 서류 준비",
+          content: "12월까지 소득공제 항목을 점검하고 서류를 준비하세요.",
+          category: "deadline"
+        },
+        {
+          id: 3,
+          title: "청년도약계좌 가입",
+          content: "정부기여금을 받으며 목돈을 만들 수 있는 기회예요.",
+          category: "hot"
+        }
+      ]);
+    }
+
+    // 복지 검색 결과 초기 설정
+    if (welfareResults.length === 0) {
+      const initialData = [
+        {
+          id: 'youth-monthly-rent',
+          name: '청년 월세 한시 특별지원',
+          agency: '국토교통부',
+          category: '주거지원',
+          content: '만 19~34세 청년의 월세 부담을 덜어주기 위해 월 최대 20만원씩 12개월간 지원하는 정책입니다.',
+          targetGroup: '만 19~34세 무주택 청년',
+          applicationPeriod: '2024년 상시',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004123'
+        },
+        {
+          id: 'birth-support',
+          name: '첫만남이용권',
+          agency: '보건복지부',
+          category: '출산·보육',
+          content: '2022년 1월 1일 이후 출생한 아동에게 국민행복카드 포인트 200만원을 지급하는 출산 지원 정책입니다.',
+          targetGroup: '2022년 이후 출생 아동',
+          applicationPeriod: '출생 후 2년 이내',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00004045'
+        },
+        {
+          id: 'elderly-medical',
+          name: '노인 의료비 지원',
+          agency: '보건복지부',
+          category: '의료지원',
+          content: '65세 이상 기초생활수급자 및 차상위계층의 의료비 본인부담금을 지원하는 정책입니다.',
+          targetGroup: '65세 이상 저소득층',
+          applicationPeriod: '연중 상시',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003789'
+        },
+        {
+          id: 'job-seeker-allowance',
+          name: '구직급여',
+          agency: '고용노동부',
+          category: '고용지원',
+          content: '비자발적으로 실업상태가 된 구직자에게 구직활동을 지원하고 생활안정을 도모하는 급여입니다.',
+          targetGroup: '고용보험 가입 이력이 있는 실업자',
+          applicationPeriod: '실업 후 12개월 이내',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003567'
+        },
+        {
+          id: 'startup-support',
+          name: '청년창업지원',
+          agency: '중소벤처기업부',
+          category: '창업지원',
+          content: '만 39세 이하 청년의 창업을 지원하기 위한 사업화 자금 및 멘토링을 제공하는 정책입니다.',
+          targetGroup: '만 39세 이하 예비창업자',
+          applicationPeriod: '연 2회 공모',
+          url: 'https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00003899'
+        }
+      ];
+      setWelfareResults(initialData.slice(0, itemsPerPage));
+      setTotalWelfareCount(initialData.length);
+    }
+  }, []);
+
   const loadData = async () => {
     try {
       // 버킷리스트 데이터 로드
