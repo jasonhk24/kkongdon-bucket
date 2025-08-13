@@ -442,20 +442,30 @@ const App = () => {
     const bucketListValue = bucketListRef.current?.value?.trim();
     const targetAmountValue = targetAmountRef.current?.value?.replace(/[^0-9]/g, '');
     
-    if (bucketListValue && targetAmountValue) {
-      setBucketList(bucketListValue);
-      setTargetAmount(targetAmountValue);
-      setBucketLists([{ 
-        id: 1, 
-        name: bucketListValue, 
-        target: parseInt(targetAmountValue), 
-        saved: 0,
-        deadline: '2024-12-31'
-      }]);
-      setSavedAmount(350000);
-      setMonthlyAmount(85000);
-      setCurrentScreen('dashboard');
+    if (!bucketListValue) {
+      alert('버킷리스트를 입력해주세요! 🎯');
+      bucketListRef.current?.focus();
+      return;
     }
+    
+    if (!targetAmountValue || parseInt(targetAmountValue) < 1000) {
+      alert('목표 금액을 1,000원 이상 입력해주세요! 💰');
+      targetAmountRef.current?.focus();
+      return;
+    }
+    
+    setBucketList(bucketListValue);
+    setTargetAmount(targetAmountValue);
+    setBucketLists([{ 
+      id: 1, 
+      name: bucketListValue, 
+      target: parseInt(targetAmountValue), 
+      saved: 0,
+      deadline: '2024-12-31'
+    }]);
+    setSavedAmount(350000);
+    setMonthlyAmount(85000);
+    setCurrentScreen('dashboard');
   };
 
   const OnboardingScreen = () => (
@@ -496,8 +506,15 @@ const App = () => {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                defaultValue={targetAmount}
-                placeholder="1000000"
+                defaultValue={targetAmount ? parseInt(targetAmount).toLocaleString() : ''}
+                onInput={(e) => {
+                  // 숫자만 추출
+                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  // 콤마 포맷팅 적용
+                  const formattedValue = numericValue ? parseInt(numericValue).toLocaleString() : '';
+                  e.target.value = formattedValue;
+                }}
+                placeholder="1,000,000"
                 className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-yellow-400 text-gray-800 pr-12"
               />
               <span className="absolute right-4 top-4 text-gray-500">원</span>
@@ -506,8 +523,7 @@ const App = () => {
 
           <button
             onClick={handleOnboardingComplete}
-            disabled={!bucketList || !targetAmount}
-            className="w-full bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium py-4 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+            className="w-full bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium py-4 rounded-xl hover:from-yellow-500 hover:to-orange-500 transition-all transform hover:scale-105 active:scale-95"
           >
             시작하기 🚀
           </button>
