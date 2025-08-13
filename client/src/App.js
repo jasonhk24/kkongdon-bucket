@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Plus, Home, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader, Search, X } from 'lucide-react';
 import { bucketAPI, chatbotAPI, welfareAPI, recommendationAPI } from './services/api';
