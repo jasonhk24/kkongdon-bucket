@@ -27,6 +27,10 @@ const App = () => {
   const [totalWelfareCount, setTotalWelfareCount] = useState(0);
   const welfareSearchRef = useRef(null);
 
+  // 금융상품 관련 상태
+  const [financialProducts, setFinancialProducts] = useState([]);
+  const [showProductDetail, setShowProductDetail] = useState(null);
+
   // 카운트업 애니메이션
   const [displaySaved, setDisplaySaved] = useState(0);
   const [displayMonthly, setDisplayMonthly] = useState(0);
@@ -75,6 +79,136 @@ const App = () => {
           id: 3,
           question: "주택청약종합저축의 소득공제 한도는?",
           answer: "연간 납입액 240만원 한도로 40% 소득공제를 받을 수 있습니다."
+        }
+      ]);
+
+      // 금융상품 데이터 설정
+      setFinancialProducts([
+        {
+          id: 'kb-young-youth-account',
+          name: 'KB Young Youth 청소년통장',
+          type: '입출금이 자유로운 예금 (저축예금)',
+          target: '만 19세 미만 실명의 개인 (1인 1계좌)',
+          channel: '',
+          period: '해당 없음',
+          amount: '해당 없음',
+          rate: '별도 안내',
+          paymentType: '해당 없음',
+          features: "'저금통' 기능으로 특별우대이율 및 수수료 면제, 무료 교육서비스 제공",
+          note: "만 19세 되는 해 첫 영업일에 'KB국민ONE통장'으로 자동전환",
+          category: 'youth'
+        },
+        {
+          id: 'kb-one-account',
+          name: 'KB국민ONE통장',
+          type: '입출금이 자유로운 예금',
+          target: "'KB Young Youth 청소년통장'에서 전환된 고객 등",
+          channel: '자동전환',
+          period: '해당 없음',
+          amount: '해당 없음',
+          rate: '별도 안내',
+          paymentType: '해당 없음',
+          features: '실적에 따라 전자금융 이체수수료, 자동화기기 시간외출금수수료 등 면제',
+          note: '면제 조건은 기본실적(KB카드결제, 공과금이체)과 추가실적(급여이체 등)에 따라 차등 적용',
+          category: 'general'
+        },
+        {
+          id: 'kb-diy-savings',
+          name: 'KB내맘대로적금',
+          type: '정액적립식/자유적립식',
+          target: '만 14세 이상의 실명의 개인',
+          channel: '인터넷, 스타뱅킹',
+          period: '6개월 ~ 36개월 (월단위/일단위)',
+          amount: '[자유] 월 1만원 ~ 3백만원 / [정액] 월 1만원 이상 약정 금액',
+          rate: '3.55%',
+          paymentType: '만기일시지급식',
+          features: '고객이 직접 우대이율 등 상품 요건을 설계하는 DIY형 비대면 전용 상품',
+          note: '자유적립식 예금은 1인 최대 5계좌까지 가입 가능',
+          category: 'savings'
+        },
+        {
+          id: 'kb-young-youth-savings',
+          name: 'KB Young Youth 적금',
+          type: '자유적립식 예금',
+          target: '만 19세 미만 실명의 개인 (1인 1계좌)',
+          channel: '스타뱅킹',
+          period: '1년 (자동 재예치 가능)',
+          amount: '신규 1만원~3백만원, 2회차 이후 월 1천원~3백만원',
+          rate: '3.40%',
+          paymentType: '만기일시지급식',
+          features: '어린이/청소년을 위한 무료 보험가입서비스 제공',
+          note: '만 20세가 되는 해에 만기 도래 시 재예치 불가',
+          category: 'youth'
+        },
+        {
+          id: 'kb-star-deposit',
+          name: 'KB Star 정기예금',
+          type: '정기예금',
+          target: '개인 및 개인사업자',
+          channel: '인터넷, 스타뱅킹, 고객센터',
+          period: '1개월 ~ 36개월 (월단위)',
+          amount: '1백만원 이상 (추가입금 불가)',
+          rate: '2.45%',
+          paymentType: '만기일시지급식',
+          features: 'Digital KB 대표 정기예금으로, 자동 만기관리 및 분할인출 가능',
+          note: '분할인출은 가입 1개월 후부터 총 3회 가능하며, 인출 후 잔액 100만원 이상 유지 필요',
+          category: 'deposit'
+        },
+        {
+          id: 'kb-youth-leap-account',
+          name: 'KB청년도약계좌',
+          type: '자유적립식 예금',
+          target: '만 19세~34세, 개인소득 및 가구소득 기준 충족자',
+          channel: '스타뱅킹',
+          period: '60개월',
+          amount: '월 1천원 ~ 70만원',
+          rate: '6.00%',
+          paymentType: '만기일시지급식',
+          features: '정부기여금 지급 및 비과세 혜택 제공',
+          note: '청년희망적금 보유자 가입 불가, 가입/신규 기간 별도 운영',
+          category: 'youth'
+        },
+        {
+          id: 'kb-health-savings',
+          name: 'KB스타 건강적금',
+          type: '자유적립식 예금',
+          target: '만 14세 이상 실명의 개인 (1인 1계좌)',
+          channel: '스타뱅킹',
+          period: '6개월',
+          amount: '월 1만원 ~ 20만원',
+          rate: '6.00%',
+          paymentType: '만기일시지급식',
+          features: '걸음수에 따른 우대금리 적용',
+          note: '10만좌 한도 소진 시 판매 종료',
+          category: 'special'
+        },
+        {
+          id: 'kb-star-savings-3',
+          name: 'KB스타적금Ⅲ',
+          type: '자유적립식 예금',
+          target: '만 19세 이상 실명의 개인 (1인 1계좌)',
+          channel: '스타뱅킹',
+          period: '12개월',
+          amount: '월 1만원 ~ 30만원',
+          rate: '6.00%',
+          paymentType: '만기일시지급식',
+          features: '신규 또는 장기미거래 고객에게 우대이율 제공',
+          note: '30만좌 한도 소진 시 판매 종료',
+          category: 'special'
+        },
+        {
+          id: 'kb-travel-savings',
+          name: 'KB두근두근여행적금',
+          type: '정액적립식 예금',
+          target: '실명의 개인',
+          channel: '스타뱅킹',
+          period: '6개월',
+          amount: '월 5만원 ~ 100만원 (만원 단위)',
+          rate: '3.65%',
+          paymentType: '만기일시지급식',
+          features: '노랑풍선 최대 3만원 & 4% 할인쿠폰 제공',
+          note: '여행 준비에 특화된 적금',
+          category: 'special'
         }
       ]);
 
@@ -656,187 +790,208 @@ const App = () => {
     </div>
   );
 
-  const RecommendScreen = () => (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-6 pt-16 pb-24">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">복지정보 찾기</h1>
-            <p className="text-gray-600 text-sm">나에게 맞는 복지혜택을 찾아보세요</p>
-          </div>
-        </div>
+  const RecommendScreen = () => {
+    // 카테고리별 상품 필터링
+    const getProductsByCategory = (category) => {
+      return financialProducts.filter(product => product.category === category);
+    };
 
-        {/* 검색 바 */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <div className="flex space-x-3">
-            <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
-              <input
-                ref={welfareSearchRef}
-                type="text"
-                placeholder="복지정책을 검색해보세요 (예: 청년, 월세, 의료비)"
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400"
-                onKeyPress={(e) => e.key === 'Enter' && searchWelfare()}
-              />
+    // 맞춤 추천 로직 (사용자의 나이대나 상황에 따라)
+    const getRecommendedProducts = () => {
+      return financialProducts.filter(product => 
+        product.category === 'youth' || product.rate === '6.00%'
+      ).slice(0, 3);
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-6 pt-16 pb-24">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">추천상품</h1>
+              <p className="text-gray-600 text-sm">나에게 맞는 금융상품을 찾아보세요</p>
             </div>
-            <button
-              onClick={() => searchWelfare()}
-              disabled={isWelfareLoading}
-              className="bg-blue-500 text-white px-6 py-3 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              {isWelfareLoading ? <Loader className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            </button>
           </div>
-        </div>
 
-        {/* 카테고리 필터 */}
-        <div className="mb-6">
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {welfareCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => {
-                  setSelectedWelfareCategory(category.id);
-                  setCurrentPage(1);
-                  const searchQuery = welfareSearchRef.current?.value?.trim();
-                  if (searchQuery) {
-                    searchWelfare(searchQuery, 1);
-                  } else {
-                    loadAllWelfare(1);
-                  }
-                }}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedWelfareCategory === category.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {category.name} ({category.count || 0})
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 결과 헤더 */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">
-            총 {totalWelfareCount}개의 복지정책 (페이지 {currentPage})
-          </div>
-        </div>
-
-        {/* 복지정보 목록 */}
-        <div className="space-y-4 mb-6">
-          {isWelfareLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader className="w-8 h-8 animate-spin text-blue-500" />
-              <span className="ml-2 text-gray-600">검색 중...</span>
-            </div>
-          ) : welfareResults.length > 0 ? (
-            welfareResults.map((welfare) => (
-              <div key={welfare.id} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center mb-2">
-                      <h3 className="font-bold text-gray-800 text-lg mr-3">{welfare.name}</h3>
-                      <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">
-                        {welfare.category}
-                      </span>
+          {/* 맞춤 추천 상품 */}
+          <div className="mb-8">
+            <h3 className="font-bold text-gray-800 mb-4">🔥 맞춤 추천</h3>
+            <div className="space-y-4">
+              {getRecommendedProducts().map((product) => (
+                <div key={product.id} className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="text-xl font-bold mb-2">{product.name}</h4>
+                      <p className="text-blue-100 text-sm">{product.type}</p>
                     </div>
-                    <p className="text-gray-600 text-sm mb-2">{welfare.agency}</p>
-                    <p className="text-gray-700 text-sm leading-relaxed">{welfare.content}</p>
+                    <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs">
+                      추천
+                    </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 ml-4 mt-2" />
+                  <div className="mb-4">
+                    <div className="text-sm opacity-90 mb-1">최고금리</div>
+                    <div className="text-2xl font-bold">{product.rate}</div>
+                  </div>
+                  <div className="text-sm opacity-90 mb-6">
+                    {product.features}
+                  </div>
+                  <button 
+                    onClick={() => setShowProductDetail(product)}
+                    className="w-full bg-white text-blue-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all"
+                  >
+                    자세히 보기
+                  </button>
                 </div>
-                
-                <div className="border-t pt-3 mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">대상:</span> {welfare.targetGroup}
+              ))}
+            </div>
+          </div>
+
+          {/* 카테고리별 상품 */}
+          <div className="space-y-6">
+            <h3 className="font-bold text-gray-800">📋 카테고리별 상품</h3>
+            
+            {/* 청년 전용 상품 */}
+            <div>
+              <h4 className="font-medium text-gray-700 mb-3">👤 청년 전용</h4>
+              <div className="space-y-3">
+                {getProductsByCategory('youth').map((product) => (
+                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h5 className="font-bold text-gray-800">{product.name}</h5>
+                        <p className="text-gray-600 text-sm">{product.type}</p>
+                        <p className="text-blue-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowProductDetail(product)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                      >
+                        자세히 보기
+                      </button>
                     </div>
-                    <button
-                      onClick={() => getWelfareDetail(welfare)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                    >
-                      자세히 보기
-                    </button>
+                    <p className="text-gray-700 text-sm">{product.features}</p>
                   </div>
-                  {welfare.applicationPeriod && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">신청기간:</span> {welfare.applicationPeriod}
+                ))}
+              </div>
+            </div>
+
+            {/* 적금 상품 */}
+            <div>
+              <h4 className="font-medium text-gray-700 mb-3">💰 적금</h4>
+              <div className="space-y-3">
+                {getProductsByCategory('savings').map((product) => (
+                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h5 className="font-bold text-gray-800">{product.name}</h5>
+                        <p className="text-gray-600 text-sm">{product.type}</p>
+                        <p className="text-green-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowProductDetail(product)}
+                        className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
+                      >
+                        자세히 보기
+                      </button>
+                    </div>
+                    <p className="text-gray-700 text-sm">{product.features}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 특별 상품 */}
+            <div>
+              <h4 className="font-medium text-gray-700 mb-3">⭐ 특별 상품</h4>
+              <div className="space-y-3">
+                {getProductsByCategory('special').map((product) => (
+                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h5 className="font-bold text-gray-800">{product.name}</h5>
+                        <p className="text-gray-600 text-sm">{product.type}</p>
+                        <p className="text-orange-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowProductDetail(product)}
+                        className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-600 transition-colors"
+                      >
+                        자세히 보기
+                      </button>
+                    </div>
+                    <p className="text-gray-700 text-sm">{product.features}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 상품 상세 모달 */}
+          {showProductDetail && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-800 text-lg">{showProductDetail.name}</h3>
+                  <button
+                    onClick={() => setShowProductDetail(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <span className="font-medium text-gray-700">상품유형:</span>
+                    <p className="text-gray-600">{showProductDetail.type}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">가입대상:</span>
+                    <p className="text-gray-600">{showProductDetail.target}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">가입경로:</span>
+                    <p className="text-gray-600">{showProductDetail.channel || '해당 없음'}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">계약기간:</span>
+                    <p className="text-gray-600">{showProductDetail.period}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">저축금액:</span>
+                    <p className="text-gray-600">{showProductDetail.amount}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">최고금리:</span>
+                    <p className="text-blue-600 font-bold">{showProductDetail.rate}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">이자지급방식:</span>
+                    <p className="text-gray-600">{showProductDetail.paymentType}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">상품특징:</span>
+                    <p className="text-gray-600">{showProductDetail.features}</p>
+                  </div>
+                  {showProductDetail.note && (
+                    <div>
+                      <span className="font-medium text-gray-700">비고:</span>
+                      <p className="text-gray-600 text-sm">{showProductDetail.note}</p>
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={() => setShowProductDetail(null)}
+                  className="w-full mt-6 bg-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 transition-colors"
+                >
+                  닫기
+                </button>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-gray-600 font-medium mb-2">검색 결과가 없습니다</h3>
-              <p className="text-gray-500 text-sm">다른 키워드로 검색해보세요</p>
             </div>
           )}
         </div>
-
-        {/* 페이지네이션 */}
-        {totalWelfareCount > itemsPerPage && (
-          <div className="flex justify-center space-x-2">
-            {Array.from({ length: Math.ceil(totalWelfareCount / itemsPerPage) }, (_, i) => i + 1)
-              .slice(Math.max(0, currentPage - 3), currentPage + 2)
-              .map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    currentPage === page
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-          </div>
-        )}
-
-        {/* 복지정보 상세 모달 */}
-        {showWelfareDetail && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-800 text-lg">{showWelfareDetail.name}</h3>
-                <button
-                  onClick={() => setShowWelfareDetail(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium text-gray-700">담당기관:</span>
-                  <p className="text-gray-600">{showWelfareDetail.agency}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">내용:</span>
-                  <p className="text-gray-600">{showWelfareDetail.content}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">대상:</span>
-                  <p className="text-gray-600">{showWelfareDetail.targetGroup}</p>
-                </div>
-                {showWelfareDetail.applicationPeriod && (
-                  <div>
-                    <span className="font-medium text-gray-700">신청기간:</span>
-                    <p className="text-gray-600">{showWelfareDetail.applicationPeriod}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const BottomNav = () => (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3">
@@ -846,7 +1001,7 @@ const App = () => {
             { icon: Home, label: '홈', screen: 'dashboard' },
             { icon: Target, label: '버킷리스트', screen: 'bucket' },
             { icon: Bot, label: '세법도우미', screen: 'chatbot' },
-            { icon: Gift, label: '복지정보', screen: 'recommend' }
+            { icon: Gift, label: '추천상품', screen: 'recommend' }
           ].map(({ icon: Icon, label, screen }) => (
             <button
               key={screen}
