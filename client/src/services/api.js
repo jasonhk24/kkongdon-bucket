@@ -136,4 +136,10 @@ export const chatbotAPI = {
   getFAQ: () => api.get('/chatbot/faq'),
 };
 
+// Recommendation API
+export const recommendationAPI = {
+  // 개인화 금융상품 추천
+  getRecommendations: (userData) => api.post('/recommendation/recommend', userData),
+};
+
 export default api;

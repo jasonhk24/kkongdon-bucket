@@ -3,13 +3,11 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+// 라우트만 import (다른 서비스는 제외)
 const welfareRoutes = require('./routes/welfare');
-const chatbotRoutes = require('./routes/chatbot');
-const bucketRoutes = require('./routes/bucket');
-const financeRoutes = require('./routes/finance');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // CORS 설정 (배포용)
 const corsOptions = {
@@ -39,15 +37,12 @@ app.get('/health', (req, res) => {
       database: 'memory',
       cors: 'enabled'
     },
-    endpoints: ['/api/welfare', '/api/chatbot', '/api/bucket', '/api/finance']
+    endpoints: ['/api/welfare', '/api/chatbot', '/api/bucket', '/api/finance', '/api/recommendation']
   });
 });
 
 // 라우트
 app.use('/api/welfare', welfareRoutes);
-app.use('/api/chatbot', chatbotRoutes);
-app.use('/api/bucket', bucketRoutes);
-app.use('/api/finance', financeRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 
@@ -76,10 +71,28 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
+app.listen(PORT, '127.0.0.1', (err) => {
+  if (err) {
+    console.error('❌ 서버 시작 실패:', err);
+    process.exit(1);
+  }
+  console.log(`🚀 서버가 포트 ${PORT} (localhost)에서 실행 중입니다.`);
   console.log(`📍 환경: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Health check: http://localhost:${PORT}/health`);
   console.log(`🔑 Gemini API Key: ${process.env.GEMINI_API_KEY ? '✅ 설정됨' : '❌ 없음'}`);
   console.log(`🤖 챗봇 기능: ${process.env.GEMINI_API_KEY ? '활성화' : '비활성화 (fallback 모드)'}`);
+  console.log('⚡ 서버 준비 완료 - API 요청을 받을 수 있습니다!');
+  
+  // 서버 시작 후 데이터 로딩
+  console.log('📊 데이터 로딩 시작...');
+  
+  // RAG 시스템 초기화를 백그라운드에서 실행 (임시 비활성화)
+  // console.log('🔄 RAG 시스템 초기화 시작...');
+  // ragService.initialize()
+  //   .then(() => {
+  //     console.log('🎉 RAG 시스템 초기화 완료!');
+  //   })
+  //   .catch((error) => {
+  //     console.error('⚠️ RAG 시스템 초기화 실패 (fallback 모드로 운영):', error.message);
+  //   });
 });

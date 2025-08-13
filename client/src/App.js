@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Plus, MessageCircle, CreditCard, Home, List, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader, Search, Filter, X } from 'lucide-react';
-import { bucketAPI, financeAPI, chatbotAPI, welfareAPI } from './services/api';
+import { ChevronRight, Plus, Home, Bot, Gift, Settings, Target, TrendingUp, Calendar, Bell, Send, Loader, Search, X } from 'lucide-react';
+import { bucketAPI, chatbotAPI, welfareAPI, recommendationAPI } from './services/api';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
@@ -25,13 +25,27 @@ const App = () => {
   const [isWelfareLoading, setIsWelfareLoading] = useState(false);
   const [showWelfareDetail, setShowWelfareDetail] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(10); // 한 페이지에 10개씩 표시
   const [totalWelfareCount, setTotalWelfareCount] = useState(0);
+  const [hasLoadedWelfare, setHasLoadedWelfare] = useState(false); // 복지 데이터 로드 여부 추적
   const welfareSearchRef = useRef(null);
 
   // 금융상품 관련 상태
   const [financialProducts, setFinancialProducts] = useState([]);
   const [showProductDetail, setShowProductDetail] = useState(null);
+  
+  // 개인화 추천 관련 상태
+  const [recommendations, setRecommendations] = useState([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [showRecommendationForm, setShowRecommendationForm] = useState(false);
+  const [recommendationData, setRecommendationData] = useState({
+    bucketGoal: '',
+    targetAmount: '',
+    timeFrame: 12,
+    riskTolerance: 'moderate',
+    age: '',
+    income: ''
+  });
 
   // 카운트업 애니메이션
   const [displaySaved, setDisplaySaved] = useState(0);
@@ -62,6 +76,16 @@ const App = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+  
+  // 복지정보 초기 로드 체크
+  useEffect(() => {
+    // 페이지 새로고침 후 복지 탭이 이미 선택되어 있다면 데이터 로드
+    const savedTab = sessionStorage.getItem('selectedTab');
+    if (savedTab === 'welfare' && !hasLoadedWelfare && currentScreen === 'recommend') {
+      loadAllWelfare(1);
+      setHasLoadedWelfare(true);
+    }
+  }, [currentScreen, hasLoadedWelfare]);
 
   const loadInitialData = async () => {
     try {
@@ -224,9 +248,6 @@ const App = () => {
         { id: 'finance', name: '금융지원', count: 290 }
       ]);
 
-      // 초기 복지 검색 결과 로드
-      loadAllWelfare();
-      
       console.log('초기 데이터 로딩 완료');
     } catch (error) {
     }
@@ -280,34 +301,90 @@ const App = () => {
     await sendChatMessage();
   };
 
-  // 복지 정보 검색 함수
-  const searchWelfare = async (query, page = currentPage) => {
-    const searchQuery = query || welfareSearchRef.current?.value?.trim() || '';
-    
-    if (!searchQuery) {
-      await loadAllWelfare(page);
+  // 개인화 금융상품 추천 함수들
+  const handleRecommendationSubmit = async () => {
+    if (!recommendationData.bucketGoal || !recommendationData.targetAmount) {
+      alert('버킷리스트 목표와 목표금액을 입력해주세요.');
       return;
     }
 
+    setIsLoadingRecommendations(true);
+    
+    try {
+      console.log('🎯 추천 요청 데이터:', recommendationData);
+      
+      const response = await recommendationAPI.getRecommendations({
+        bucketGoal: recommendationData.bucketGoal,
+        targetAmount: parseInt(recommendationData.targetAmount),
+        timeFrame: parseInt(recommendationData.timeFrame),
+        riskTolerance: recommendationData.riskTolerance,
+        age: recommendationData.age ? parseInt(recommendationData.age) : undefined,
+        income: recommendationData.income ? parseInt(recommendationData.income) : undefined
+      });
+
+      if (response.success) {
+        setRecommendations(response.data.recommendations);
+        setShowRecommendationForm(false);
+        console.log('✅ 추천 받기 성공:', response.data);
+      } else {
+        throw new Error(response.error || '추천 실패');
+      }
+    } catch (error) {
+      console.error('❌ 추천 요청 실패:', error);
+      alert('추천 시스템에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  };
+
+  const openRecommendationForm = () => {
+    // 기존 버킷리스트 데이터가 있으면 미리 채우기
+    if (bucketList && targetAmount) {
+      setRecommendationData(prev => ({
+        ...prev,
+        bucketGoal: bucketList,
+        targetAmount: targetAmount
+      }));
+    }
+    setShowRecommendationForm(true);
+  };
+
+  // 복지 정보 검색 함수 (CSV 직접 검색)
+  const searchWelfare = async (query, page = currentPage) => {
+    const searchQuery = query || welfareSearchRef.current?.value?.trim() || '';
+    
     setIsWelfareLoading(true);
 
     try {
-      const offset = (page - 1) * itemsPerPage;
-      const response = await welfareAPI.search(searchQuery, {
-        limit: itemsPerPage,
-        offset: offset,
-        category: selectedWelfareCategory !== 'all' ? selectedWelfareCategory : undefined
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20'
       });
+      
+      if (searchQuery) {
+        params.append('q', searchQuery);
+      }
+      
+      if (selectedWelfareCategory !== 'all') {
+        params.append('category', selectedWelfareCategory);
+      }
 
-      if (response?.success && response.data) {
-        setWelfareResults(response.data.results || []);
-        setTotalWelfareCount(response.data.total || 0);
+      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/welfare/csv?${params}`;
+      console.log('🔍 CSV 검색 API 호출:', apiUrl);
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (data?.success && data.data) {
+        setWelfareResults(data.data.results || []);
+        setTotalWelfareCount(data.data.total || 0);
         setCurrentPage(page);
+        console.log('✅ CSV 검색 완료:', data.data.results?.length, '개 결과');
       } else {
         throw new Error('검색 결과 없음');
       }
     } catch (error) {
-      console.error('복지 검색 오류:', error);
+      console.error('복지 CSV 검색 오류:', error);
       // Fallback 데이터
       searchWelfareFallback(searchQuery, page);
     } finally {
@@ -813,6 +890,23 @@ const App = () => {
   );
 
   const RecommendScreen = () => {
+    // 탭 상태를 sessionStorage에서 복원하거나 기본값으로 설정
+    const [selectedTab, setSelectedTab] = useState(() => {
+      return sessionStorage.getItem('selectedTab') || 'recommendation';
+    });
+    
+    // 탭 변경 시 sessionStorage에 저장
+    const handleTabChange = (tabName) => {
+      setSelectedTab(tabName);
+      sessionStorage.setItem('selectedTab', tabName);
+      
+      // 복지정보 탭이 처음 선택될 때만 데이터 로드
+      if (tabName === 'welfare' && !hasLoadedWelfare) {
+        loadAllWelfare(1);
+        setHasLoadedWelfare(true);
+      }
+    };
+
     // 카테고리별 상품 필터링
     const getProductsByCategory = (category) => {
       return financialProducts.filter(product => product.category === category);
@@ -830,123 +924,551 @@ const App = () => {
         <div className="px-6 pt-16 pb-24">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">추천상품</h1>
-              <p className="text-gray-600 text-sm">나에게 맞는 금융상품을 찾아보세요</p>
+              <h1 className="text-2xl font-bold text-gray-800">추천상품 & 복지정보</h1>
+              <p className="text-gray-600 text-sm">나에게 맞는 금융상품과 복지혜택을 찾아보세요</p>
             </div>
           </div>
 
-          {/* 맞춤 추천 상품 */}
-          <div className="mb-8">
-            <h3 className="font-bold text-gray-800 mb-4">🔥 맞춤 추천</h3>
-            <div className="space-y-4">
-              {getRecommendedProducts().map((product) => (
-                <div key={product.id} className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="text-xl font-bold mb-2">{product.name}</h4>
-                      <p className="text-blue-100 text-sm">{product.type}</p>
+          {/* 탭 메뉴 */}
+          <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+            <button
+              onClick={() => handleTabChange('financial')}
+              className={`flex-1 py-3 px-2 rounded-lg font-medium transition-all text-sm ${
+                selectedTab === 'financial'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              💰 금융상품
+            </button>
+            <button
+              onClick={() => handleTabChange('recommendation')}
+              className={`flex-1 py-3 px-2 rounded-lg font-medium transition-all text-sm ${
+                selectedTab === 'recommendation'
+                  ? 'bg-white text-purple-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              🎯 맞춤추천
+            </button>
+            <button
+              onClick={() => handleTabChange('welfare')}
+              className={`flex-1 py-3 px-2 rounded-lg font-medium transition-all text-sm ${
+                selectedTab === 'welfare'
+                  ? 'bg-white text-green-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              🎁 복지정보
+            </button>
+          </div>
+
+          {/* 금융상품 탭 */}
+          {selectedTab === 'financial' && (
+            <>
+              {/* 맞춤 추천 상품 */}
+              <div className="mb-8">
+                <h3 className="font-bold text-gray-800 mb-4">🔥 맞춤 추천</h3>
+                <div className="space-y-4">
+                  {getRecommendedProducts().map((product) => (
+                    <div key={product.id} className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-xl font-bold mb-2">{product.name}</h4>
+                          <p className="text-blue-100 text-sm">{product.type}</p>
+                        </div>
+                        <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs">
+                          추천
+                        </div>
+                      </div>
+                      <div className="mb-4">
+                        <div className="text-sm opacity-90 mb-1">최고금리</div>
+                        <div className="text-2xl font-bold">{product.rate}</div>
+                      </div>
+                      <div className="text-sm opacity-90 mb-6">
+                        {product.features}
+                      </div>
+                      <button 
+                        onClick={() => setShowProductDetail(product)}
+                        className="w-full bg-white text-blue-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all"
+                      >
+                        자세히 보기
+                      </button>
                     </div>
-                    <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs">
-                      추천
+                  ))}
+                </div>
+              </div>
+
+              {/* 카테고리별 상품 */}
+              <div className="space-y-6">
+                <h3 className="font-bold text-gray-800">📋 카테고리별 상품</h3>
+                
+                {/* 청년 전용 상품 */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">👤 청년 전용</h4>
+                  <div className="space-y-3">
+                    {getProductsByCategory('youth').map((product) => (
+                      <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h5 className="font-bold text-gray-800">{product.name}</h5>
+                            <p className="text-gray-600 text-sm">{product.type}</p>
+                            <p className="text-blue-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                          </div>
+                          <button 
+                            onClick={() => setShowProductDetail(product)}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                          >
+                            자세히 보기
+                          </button>
+                        </div>
+                        <p className="text-gray-700 text-sm">{product.features}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 적금 상품 */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">💰 적금</h4>
+                  <div className="space-y-3">
+                    {getProductsByCategory('savings').map((product) => (
+                      <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h5 className="font-bold text-gray-800">{product.name}</h5>
+                            <p className="text-gray-600 text-sm">{product.type}</p>
+                            <p className="text-green-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                          </div>
+                          <button 
+                            onClick={() => setShowProductDetail(product)}
+                            className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
+                          >
+                            자세히 보기
+                          </button>
+                        </div>
+                        <p className="text-gray-700 text-sm">{product.features}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 특별 상품 */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">⭐ 특별 상품</h4>
+                  <div className="space-y-3">
+                    {getProductsByCategory('special').map((product) => (
+                      <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h5 className="font-bold text-gray-800">{product.name}</h5>
+                            <p className="text-gray-600 text-sm">{product.type}</p>
+                            <p className="text-orange-600 text-lg font-bold mt-1">금리 {product.rate}</p>
+                          </div>
+                          <button 
+                            onClick={() => setShowProductDetail(product)}
+                            className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-600 transition-colors"
+                          >
+                            자세히 보기
+                          </button>
+                        </div>
+                        <p className="text-gray-700 text-sm">{product.features}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* 복지정보 탭 */}
+          {selectedTab === 'welfare' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl p-6 text-white">
+                <h3 className="font-bold text-xl mb-2">🎁 복지혜택 정보</h3>
+                <p className="text-green-100">정부에서 제공하는 다양한 복지 혜택을 확인해보세요</p>
+                <div className="mt-3 text-sm">
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded">
+                    총 {totalWelfareCount}개 정책
+                  </span>
+                </div>
+              </div>
+
+              {/* 검색 입력창 */}
+              <div className="relative">
+                <input
+                  ref={welfareSearchRef}
+                  type="text"
+                  placeholder="복지 정책 검색 (예: 청년, 의료지원, 주거 등)"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const query = e.target.value.trim();
+                      if (query) {
+                        searchWelfare(query);
+                      } else {
+                        loadAllWelfare(1);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const query = welfareSearchRef.current?.value?.trim();
+                    if (query) {
+                      searchWelfare(query);
+                    } else {
+                      loadAllWelfare(1);
+                    }
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-500"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {isWelfareLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin text-green-500" />
+                  <span className="ml-2 text-gray-600">복지 정보 로딩 중...</span>
+                </div>
+              ) : welfareResults.length > 0 ? (
+                <>
+                  <div className="space-y-4">
+                    {welfareResults.map((welfare, index) => {
+                      const content = welfare.service_content_detail || welfare.정책내용 || welfare.content || '';
+                      const isLongContent = content.length > 300;
+                      const displayContent = isLongContent ? content.substring(0, 300) + '...' : content;
+                      const welfareUrl = welfare.url || 'https://www.bokjiro.go.kr';
+                      
+                      return (
+                        <div key={welfare.id || index} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-100">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <h3 className="font-bold text-gray-800 text-lg mr-3">
+                                  {welfare.policy_name || welfare.정책명 || welfare.name}
+                                </h3>
+                                <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs">
+                                  {welfare.policy_field || welfare.정책분야 || welfare.category || '복지'}
+                                </span>
+                              </div>
+                              <p className="text-gray-600 text-sm mb-2">
+                                {welfare.ministry || welfare.소관기관 || welfare.agency || '정부기관'}
+                              </p>
+                              <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                                {displayContent}
+                              </p>
+                              
+                              {isLongContent && (
+                                <button
+                                  onClick={() => window.open(welfareUrl, '_blank')}
+                                  className="inline-flex items-center text-green-600 hover:text-green-700 text-sm font-medium transition-colors"
+                                >
+                                  자세히 보기
+                                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="border-t pt-3 mt-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">지원대상:</span> {welfare.support_target || welfare.지원대상 || welfare.targetGroup || '해당자'}
+                              </div>
+                            </div>
+                            {(welfare.application_period || welfare.신청기간 || welfare.applicationPeriod) && (
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">신청기간:</span> {welfare.application_period || welfare.신청기간 || welfare.applicationPeriod}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between pt-2">
+                              <div className="text-xs text-gray-500">
+                                정책 ID: {welfare.id || `policy-${index}`}
+                              </div>
+                              <button
+                                onClick={() => window.open(welfareUrl, '_blank')}
+                                className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-full hover:bg-green-100 transition-colors"
+                              >
+                                복지로 바로가기
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 페이징 */}
+                  {totalWelfareCount > itemsPerPage && (
+                    <div className="flex items-center justify-center space-x-2 pt-6">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        이전
+                      </button>
+                      
+                      {/* 페이지 번호들 */}
+                      {(() => {
+                        const totalPages = Math.ceil(totalWelfareCount / itemsPerPage);
+                        const maxVisiblePages = 5;
+                        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                        
+                        if (endPage - startPage + 1 < maxVisiblePages) {
+                          startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+                        
+                        const pages = [];
+                        for (let i = startPage; i <= endPage; i++) {
+                          pages.push(i);
+                        }
+                        
+                        return pages.map(page => (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                              currentPage === page
+                                ? 'bg-green-500 text-white'
+                                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ));
+                      })()}
+                      
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= Math.ceil(totalWelfareCount / itemsPerPage)}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        다음
+                      </button>
                     </div>
+                  )}
+                  
+                  {/* 페이지 정보 */}
+                  <div className="text-center text-sm text-gray-500">
+                    {totalWelfareCount > 0 && (
+                      <span>
+                        총 {totalWelfareCount}개 정책 중 {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalWelfareCount)}번째 표시
+                      </span>
+                    )}
                   </div>
-                  <div className="mb-4">
-                    <div className="text-sm opacity-90 mb-1">최고금리</div>
-                    <div className="text-2xl font-bold">{product.rate}</div>
-                  </div>
-                  <div className="text-sm opacity-90 mb-6">
-                    {product.features}
-                  </div>
-                  <button 
-                    onClick={() => setShowProductDetail(product)}
-                    className="w-full bg-white text-blue-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all"
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-gray-600 font-medium mb-2">복지 정보를 불러오는 중입니다</h3>
+                  <p className="text-gray-500 text-sm">잠시만 기다려주세요</p>
+                  <button
+                    onClick={() => loadAllWelfare(1)}
+                    className="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
                   >
-                    자세히 보기
+                    다시 시도
                   </button>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
+          )}
 
-          {/* 카테고리별 상품 */}
-          <div className="space-y-6">
-            <h3 className="font-bold text-gray-800">📋 카테고리별 상품</h3>
-            
-            {/* 청년 전용 상품 */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-3">👤 청년 전용</h4>
-              <div className="space-y-3">
-                {getProductsByCategory('youth').map((product) => (
-                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h5 className="font-bold text-gray-800">{product.name}</h5>
-                        <p className="text-gray-600 text-sm">{product.type}</p>
-                        <p className="text-blue-600 text-lg font-bold mt-1">금리 {product.rate}</p>
-                      </div>
-                      <button 
-                        onClick={() => setShowProductDetail(product)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"
-                      >
-                        자세히 보기
-                      </button>
-                    </div>
-                    <p className="text-gray-700 text-sm">{product.features}</p>
-                  </div>
-                ))}
+          {/* 맞춤추천 탭 */}
+          {selectedTab === 'recommendation' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+                <h3 className="font-bold text-xl mb-2">🎯 개인화 금융상품 추천</h3>
+                <p className="text-purple-100">당신의 꿈과 목표에 맞는 최적의 금융상품을 AI가 추천해드립니다</p>
               </div>
-            </div>
 
-            {/* 적금 상품 */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-3">💰 적금</h4>
-              <div className="space-y-3">
-                {getProductsByCategory('savings').map((product) => (
-                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h5 className="font-bold text-gray-800">{product.name}</h5>
-                        <p className="text-gray-600 text-sm">{product.type}</p>
-                        <p className="text-green-600 text-lg font-bold mt-1">금리 {product.rate}</p>
-                      </div>
-                      <button 
-                        onClick={() => setShowProductDetail(product)}
-                        className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
-                      >
-                        자세히 보기
-                      </button>
-                    </div>
-                    <p className="text-gray-700 text-sm">{product.features}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+              {!showRecommendationForm && recommendations.length === 0 && (
+                <div className="text-center py-12">
+                  <Target className="w-16 h-16 text-purple-300 mx-auto mb-4" />
+                  <h3 className="text-gray-800 font-bold text-lg mb-2">맞춤 추천 받기</h3>
+                  <p className="text-gray-600 mb-6">목표와 상황을 입력하고 개인화된 금융상품을 추천받아보세요</p>
+                  <button
+                    onClick={openRecommendationForm}
+                    className="bg-purple-500 text-white px-8 py-3 rounded-xl font-medium hover:bg-purple-600 transition-colors"
+                  >
+                    추천 받기 시작하기
+                  </button>
+                </div>
+              )}
 
-            {/* 특별 상품 */}
-            <div>
-              <h4 className="font-medium text-gray-700 mb-3">⭐ 특별 상품</h4>
-              <div className="space-y-3">
-                {getProductsByCategory('special').map((product) => (
-                  <div key={product.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h5 className="font-bold text-gray-800">{product.name}</h5>
-                        <p className="text-gray-600 text-sm">{product.type}</p>
-                        <p className="text-orange-600 text-lg font-bold mt-1">금리 {product.rate}</p>
-                      </div>
-                      <button 
-                        onClick={() => setShowProductDetail(product)}
-                        className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-600 transition-colors"
-                      >
-                        자세히 보기
-                      </button>
-                    </div>
-                    <p className="text-gray-700 text-sm">{product.features}</p>
+              {showRecommendationForm && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-bold text-gray-800 text-lg">개인 정보 입력</h3>
+                    <button
+                      onClick={() => setShowRecommendationForm(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-6 h-6" />
+                    </button>
                   </div>
-                ))}
-              </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        버킷리스트 목표 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={recommendationData.bucketGoal}
+                        onChange={(e) => setRecommendationData(prev => ({...prev, bucketGoal: e.target.value}))}
+                        placeholder="예: 유럽 여행, 결혼 준비, 내 집 마련"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          목표 금액 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={recommendationData.targetAmount}
+                          onChange={(e) => setRecommendationData(prev => ({...prev, targetAmount: e.target.value}))}
+                          placeholder="1000000"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">달성 기간 (개월)</label>
+                        <select
+                          value={recommendationData.timeFrame}
+                          onChange={(e) => setRecommendationData(prev => ({...prev, timeFrame: e.target.value}))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        >
+                          <option value="6">6개월</option>
+                          <option value="12">1년</option>
+                          <option value="24">2년</option>
+                          <option value="36">3년</option>
+                          <option value="60">5년</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">나이</label>
+                        <input
+                          type="number"
+                          value={recommendationData.age}
+                          onChange={(e) => setRecommendationData(prev => ({...prev, age: e.target.value}))}
+                          placeholder="25"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">월 소득</label>
+                        <input
+                          type="number"
+                          value={recommendationData.income}
+                          onChange={(e) => setRecommendationData(prev => ({...prev, income: e.target.value}))}
+                          placeholder="3000000"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">위험 성향</label>
+                      <select
+                        value={recommendationData.riskTolerance}
+                        onChange={(e) => setRecommendationData(prev => ({...prev, riskTolerance: e.target.value}))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="conservative">안전 추구형 (원금 보장 선호)</option>
+                        <option value="moderate">균형 추구형 (적절한 위험 감수)</option>
+                        <option value="aggressive">성장 추구형 (높은 수익 추구)</option>
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleRecommendationSubmit}
+                      disabled={isLoadingRecommendations}
+                      className="w-full bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+                    >
+                      {isLoadingRecommendations ? (
+                        <>
+                          <Loader className="w-5 h-5 animate-spin mr-2" />
+                          AI가 분석 중...
+                        </>
+                      ) : (
+                        '맞춤 상품 추천받기'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {recommendations.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-800 text-lg">🎯 추천 결과</h3>
+                    <button
+                      onClick={openRecommendationForm}
+                      className="text-purple-500 text-sm hover:text-purple-600"
+                    >
+                      다시 추천받기
+                    </button>
+                  </div>
+
+                  {recommendations.map((product, index) => (
+                    <div key={index} className="bg-white rounded-2xl p-6 shadow-sm">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <div className="flex items-center mb-2">
+                            <h3 className="font-bold text-gray-800 text-lg mr-3">{product.name}</h3>
+                            <span className="bg-purple-100 text-purple-600 px-2 py-1 rounded-full text-xs">
+                              적합도 {product.suitabilityScore}%
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm">{product.type}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-purple-600">{product.rate}%</div>
+                          <div className="text-xs text-gray-500">연 금리</div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                        <div className="text-sm text-gray-700">
+                          <div className="font-medium text-purple-600 mb-2">💡 AI 추천 이유</div>
+                          <p className="leading-relaxed">{product.aiAnalysis}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-blue-50 rounded-lg p-3">
+                          <div className="text-sm text-gray-600">월 저축액</div>
+                          <div className="font-bold text-blue-600">{product.monthlyAmount?.toLocaleString()}원</div>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3">
+                          <div className="text-sm text-gray-600">예상 수익</div>
+                          <div className="font-bold text-green-600">+{product.projectedReturn?.interest?.toLocaleString()}원</div>
+                        </div>
+                      </div>
+
+                      <div className="text-sm text-gray-600">
+                        <div><span className="font-medium">대상:</span> {product.target}</div>
+                        <div><span className="font-medium">기간:</span> {product.period}</div>
+                        <div><span className="font-medium">특징:</span> {product.features}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           {/* 상품 상세 모달 */}
           {showProductDetail && (
@@ -1023,7 +1545,7 @@ const App = () => {
             { icon: Home, label: '홈', screen: 'dashboard' },
             { icon: Target, label: '버킷리스트', screen: 'bucket' },
             { icon: Bot, label: '세법도우미', screen: 'chatbot' },
-            { icon: Gift, label: '추천상품', screen: 'recommend' }
+            { icon: Gift, label: '상품&복지', screen: 'recommend' }
           ].map(({ icon: Icon, label, screen }) => (
             <button
               key={screen}
