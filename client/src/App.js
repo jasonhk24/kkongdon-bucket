@@ -26,8 +26,10 @@ const App = () => {
   const [isWelfareLoading, setIsWelfareLoading] = useState(false);
   const [showWelfareDetail, setShowWelfareDetail] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [totalWelfareCount, setTotalWelfareCount] = useState(0);
+  const [sortBy, setSortBy] = useState('latest'); // 'latest', 'popular'
+  const [recommendedWelfareData, setRecommendedWelfareData] = useState([]);
   
   // 카운트업 애니메이션
   const [displaySaved, setDisplaySaved] = useState(0);
@@ -98,6 +100,12 @@ const App = () => {
       const categoriesResponse = await welfareAPI.getCategories();
       if (categoriesResponse.success) {
         setWelfareCategories(categoriesResponse.data);
+      }
+
+      // 계좌/저축 관련 복지정보 로드 (맞춤 추천용)
+      const recommendedResponse = await welfareAPI.search('청년도약계좌 청년내일저축 주택청약', { limit: 3 });
+      if (recommendedResponse.success) {
+        setRecommendedWelfareData(recommendedResponse.data.results);
       }
 
     } catch (error) {
@@ -223,7 +231,8 @@ const App = () => {
     try {
       const params = {
         limit: itemsPerPage,
-        offset: (page - 1) * itemsPerPage
+        offset: (page - 1) * itemsPerPage,
+        sortBy: sortBy
       };
       
       if (selectedWelfareCategory) {
@@ -251,7 +260,8 @@ const App = () => {
     try {
       const params = {
         limit: itemsPerPage,
-        offset: (page - 1) * itemsPerPage
+        offset: (page - 1) * itemsPerPage,
+        sortBy: sortBy
       };
       
       if (selectedWelfareCategory) {
@@ -298,7 +308,7 @@ const App = () => {
     }
   };
 
-  // 카테고리 변경 시 검색 재실행 (페이지를 1로 리셋)
+  // 카테고리, 정렬, 개수 변경 시 검색 재실행 (페이지를 1로 리셋)
   useEffect(() => {
     if (currentScreen === 'recommend') {
       setCurrentPage(1);
@@ -308,7 +318,7 @@ const App = () => {
         loadAllWelfare(1);
       }
     }
-  }, [selectedWelfareCategory]);
+  }, [selectedWelfareCategory, sortBy, itemsPerPage]);
 
   // 추천상품 화면 진입 시 초기 데이터 로드
   useEffect(() => {
@@ -654,60 +664,59 @@ const App = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-2">맞춤 추천 및 복지정보</h1>
         <p className="text-gray-600 text-sm mb-8">절세 상품과 복지 정보를 찾아보세요</p>
 
-        {/* 👤 회원님 맞춤 추천 (더미 데이터) */}
+        {/* 👤 회원님 맞춤 추천 (실제 복지정보) */}
         <div className="mb-8">
           <h3 className="font-bold text-gray-800 mb-4">👤 회원님 맞춤 추천</h3>
           <div className="space-y-4">
-            {[
-              {
-                id: 'youth-savings',
-                title: "청년내일저축계좌",
-                subtitle: "기초생활수급자 대상",
-                benefit: "매월 10만원 적립 시 정부 30만원 매칭",
-                condition: "만 15~39세 기초생활수급자",
-                color: "from-green-400 to-emerald-500"
-              },
-              {
-                id: 'housing-savings',
-                title: "주택청약종합저축",
-                subtitle: "내 집 마련 준비",
-                benefit: "연간 최대 240만원 소득공제",
-                condition: "만 19세 이상 무주택자",
-                color: "from-purple-400 to-pink-500"
-              },
-              {
-                id: 'pension-savings',
-                title: "개인연금저축",
-                subtitle: "노후 준비",
-                benefit: "연간 최대 72만원 세액공제",
-                condition: "연 400만원 이하 납입",
-                color: "from-orange-400 to-red-500"
-              }
-            ].map((product) => (
-              <div key={product.id} className="bg-white rounded-2xl p-6 shadow-sm">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-bold text-gray-800 text-lg">{product.title}</h4>
-                    <p className="text-gray-600 text-sm">{product.subtitle}</p>
+            {recommendedWelfareData.length > 0 ? (
+              recommendedWelfareData.map((welfare, index) => {
+                const colors = [
+                  "from-green-400 to-emerald-500",
+                  "from-purple-400 to-pink-500", 
+                  "from-orange-400 to-red-500"
+                ];
+                return (
+                  <div key={welfare.id || index} className="bg-white rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-bold text-gray-800 text-lg">{welfare.name || welfare.title}</h4>
+                        <p className="text-gray-600 text-sm">{welfare.agency || welfare.category}</p>
+                      </div>
+                      <div className={`bg-gradient-to-r ${colors[index % 3]} w-12 h-12 rounded-xl flex items-center justify-center`}>
+                        <CreditCard className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                      <div className="text-sm text-gray-600 mb-1">혜택</div>
+                      <div className="font-medium text-gray-800 leading-relaxed">
+                        {(welfare.content || welfare.description || '상세 내용을 확인하세요.').length > 80 
+                          ? `${(welfare.content || welfare.description || '상세 내용을 확인하세요.').substring(0, 80)}...`
+                          : (welfare.content || welfare.description || '상세 내용을 확인하세요.')
+                        }
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-gray-500">
+                        {welfare.targetGroup || '자격 요건은 상세페이지 확인'}
+                      </div>
+                      <button 
+                        onClick={() => welfare.url ? window.open(welfare.url, '_blank') : getWelfareDetail(welfare.id)}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-md"
+                      >
+                        자세히 보기 →
+                      </button>
+                    </div>
                   </div>
-                  <div className={`bg-gradient-to-r ${product.color} w-12 h-12 rounded-xl flex items-center justify-center`}>
-                    <CreditCard className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                  <div className="text-sm text-gray-600 mb-1">혜택</div>
-                  <div className="font-medium text-gray-800">{product.benefit}</div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-500">{product.condition}</div>
-                  <button className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-md">
-                    자세히 보기 →
-                  </button>
-                </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <CreditCard className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>맞춤 추천 정보를 불러오는 중입니다...</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -715,7 +724,32 @@ const App = () => {
         <div className="mb-8">
           <h3 className="font-bold text-gray-800 mb-4">🔥 인기 상품</h3>
           <div className="flex space-x-4 overflow-x-auto pb-4">
-            {financeProducts.filter(product => product.isRecommended && product.bank?.includes('KB')).map((product) => (
+            {[
+              {
+                id: 'kb-star-banking',
+                bank: 'KB국민은행',
+                name: 'KB Star Banking 적금',
+                expectedSavings: 720000,
+                description: '연 최대 4.2% 금리\n12개월 이상 가입시 우대금리 제공\n매월 10만원~100만원 자유적립',
+                link: 'https://obank.kbstar.com'
+              },
+              {
+                id: 'kb-dream-plus',
+                bank: 'KB국민은행', 
+                name: 'KB 꿈플러스 청년통장',
+                expectedSavings: 960000,
+                description: '청년 전용 적금상품\n연 최대 4.8% 금리\n정부 지원금 매칭',
+                link: 'https://obank.kbstar.com'
+              },
+              {
+                id: 'kb-dream-start',
+                bank: 'KB국민은행',
+                name: 'KB Dream Start 예금',
+                expectedSavings: 540000,
+                description: '신규 고객 우대금리\n연 3.6% 기본금리\n1000만원 이하 가입 가능',
+                link: 'https://obank.kbstar.com'
+              }
+            ].concat(financeProducts.filter(product => product.isRecommended && product.bank?.includes('KB'))).map((product) => (
               <div key={product.id} className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl p-6 min-w-80 text-white shadow-lg flex-shrink-0">
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -723,7 +757,7 @@ const App = () => {
                     <h3 className="text-xl font-bold">{product.name}</h3>
                   </div>
                   <div className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
-                    {product.isRecommended ? '추천' : 'NEW'}
+                    추천
                   </div>
                 </div>
                 <div className="mb-4">
@@ -733,7 +767,10 @@ const App = () => {
                 <div className="text-sm opacity-90 mb-6 whitespace-pre-line">
                   {product.description}
                 </div>
-                <button className="w-full bg-white text-yellow-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all">
+                <button 
+                  onClick={() => window.open(product.link || 'https://obank.kbstar.com', '_blank')}
+                  className="w-full bg-white text-yellow-600 font-medium py-3 rounded-xl hover:bg-opacity-90 transition-all"
+                >
                   바로 신청하기
                 </button>
               </div>
@@ -773,6 +810,35 @@ const App = () => {
               >
                 {isWelfareLoading ? <Loader className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
               </button>
+            </div>
+
+            {/* 검색 옵션 */}
+            <div className="flex flex-wrap gap-3 mb-3">
+              {/* 표시 개수 선택 */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">표시 개수:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400"
+                >
+                  <option value={5}>5개</option>
+                  <option value={10}>10개</option>
+                </select>
+              </div>
+
+              {/* 정렬 선택 */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">정렬:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-400"
+                >
+                  <option value="latest">최신순</option>
+                  <option value="popular">인기순</option>
+                </select>
+              </div>
             </div>
 
             {/* 카테고리 필터 */}
@@ -841,7 +907,7 @@ const App = () => {
                       )}
                     </div>
                     <button 
-                      onClick={() => getWelfareDetail(welfare.id)}
+                      onClick={() => welfare.url ? window.open(welfare.url, '_blank') : getWelfareDetail(welfare.id)}
                       className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-md"
                     >
                       자세히 보기 →
